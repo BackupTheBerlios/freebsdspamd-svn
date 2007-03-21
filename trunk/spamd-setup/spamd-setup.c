@@ -45,7 +45,9 @@
 
 #define PATH_FTP		"/usr/bin/ftp"
 #define PATH_PFCTL		"/sbin/pfctl"
-#define PATH_SPAMD_CONF		"%%LOCAL_SPAMD_CONF%%"
+#ifndef PATH_SPAMD_CONF
+#define PATH_SPAMD_CONF		"/etc/mail/spamd.conf"
+#endif
 #define SPAMD_ARG_MAX		256 /* max # of args to an exec */
 
 struct cidr {
