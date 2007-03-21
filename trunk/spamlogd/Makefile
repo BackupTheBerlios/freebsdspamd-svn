@@ -5,7 +5,7 @@ SRCS=	spamlogd.c sync.c
 MAN=	spamlogd.8
 
 CFLAGS+= -Wall -Wstrict-prototypes -I${.CURDIR}/../spamd
-LDADD+= -lpcap -lcrypto
+LDADD+= -lpcap -lcrypto -lmd
 DPADD+=	${LIBPCAP}
 .PATH:  ${.CURDIR}/../spamd
 

@@ -6,7 +6,7 @@ MAN=	spamd.8
 
 CFLAGS+= -Wall -Wstrict-prototypes
 
-LDADD+=	-lcrypto
+LDADD+=	-lcrypto -lmd
 DPADD+=	${LIBCRYPTO}
 
 .include <bsd.prog.mk>

@@ -38,7 +38,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#ifdef __OpenBSD__
 #include <sha1.h>
+#else
+char   *SHA1_File(const char *, char *);
+#define SHA1File SHA1_File
+#endif
+
+
 #include <syslog.h>
 
 #include <netdb.h>

@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <netdb.h>
@@ -49,6 +50,11 @@
 #include "sdl.h"
 #include "grey.h"
 #include "sync.h"
+
+#if __FreeBSD_version < 601000
+	#define HAS_NO_STRTONUM
+#endif
+
 
 extern int server_lookup(struct sockaddr *, struct sockaddr *,
     struct sockaddr *);
@@ -106,7 +112,13 @@ void     handler(struct con *);
 void     handlew(struct con *, int one);
 
 char hostname[MAXHOSTNAMELEN];
+#ifdef __OpenBSD__
 struct syslog_data sdata = SYSLOG_DATA_INIT;
+#else
+#define	syslog_r(l, s, args...)	syslog(l,args)
+#define	openlog_r(i, l, f, s)	openlog(i, l, f)
+int sdata = 0;						/* dummy */
+#endif
 char *nreply = "450";
 char *spamd = "spamd IP-based SPAM blocker";
 int greypipe[2];
@@ -1025,7 +1037,10 @@ main(int argc, char *argv[])
 	struct servent *ent;
 	struct rlimit rlp;
 	char *bind_address = NULL;
+	/* supress warning at versions before FreeBSD 6.1 */
+#ifndef HAS_NO_STRTONUM
 	const char *errstr;
+#endif
 	char *sync_iface = NULL;
 	char *sync_baddr = NULL;
 
@@ -1109,10 +1124,24 @@ main(int argc, char *argv[])
 			stutter = i;
 			break;
 		case 'S':
+#ifndef HAS_NO_STRTONUM
+			/* 
+			 * strtonum is aviable with FreeBSD 6.1,
+			 * for older versions we have to fallback
+			 */
+
 			i = strtonum(optarg, 0, 90, &errstr);
 			if (errstr)
 				usage();
 			grey_stutter = i;
+#else
+			/* the old way (fallback) */
+			i = atoi(optarg);
+			if (i < 0 || i > 90)
+				usage();
+			grey_stutter = i;
+#endif
+
 			break;
 		case 'M':
 			low_prio_mx_ip = optarg;

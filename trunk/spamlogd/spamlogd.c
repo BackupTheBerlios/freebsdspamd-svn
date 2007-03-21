@@ -28,6 +28,8 @@
 #include <sys/ioctl.h>
 
 #include <net/if.h>
+#include <net/if_var.h>
+#include <net/if_types.h>
 #include <net/if_pflog.h>
 
 #include <netinet/in.h>
@@ -72,7 +74,17 @@ char			*networkif = NULL;
 char			*pflogif = "pflog0";
 char			 errbuf[PCAP_ERRBUF_SIZE];
 pcap_t			*hpcap = NULL;
+
+#ifdef __OpenBSD__
 struct syslog_data	 sdata	= SYSLOG_DATA_INIT;
+#else
+#define	syslog_r(l, s, args...)	syslog(l,args)
+#define	vsyslog_r(l, s, args...)	vsyslog(l,args)
+#define	openlog_r(i, l, f, s)	openlog(i, l, f)
+#define	closelog_r(l)	closelog()
+int sdata = 0;					/* dummy */
+#endif
+
 extern char		*__progname;
 
 void	logmsg(int , const char *, ...);

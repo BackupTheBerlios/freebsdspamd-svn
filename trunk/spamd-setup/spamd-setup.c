@@ -35,13 +35,17 @@
 #include <string.h>
 #include <unistd.h>
 #include <err.h>
+#ifdef __OpenBSD__
 #include <netinet/ip_ipsp.h>
+#else
+#define __dead 
+#endif
 #include <netdb.h>
 #include <zlib.h>
 
 #define PATH_FTP		"/usr/bin/ftp"
 #define PATH_PFCTL		"/sbin/pfctl"
-#define PATH_SPAMD_CONF		"/etc/mail/spamd.conf"
+#define PATH_SPAMD_CONF		"%%LOCAL_SPAMD_CONF%%"
 #define SPAMD_ARG_MAX		256 /* max # of args to an exec */
 
 struct cidr {

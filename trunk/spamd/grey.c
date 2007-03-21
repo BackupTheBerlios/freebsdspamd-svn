@@ -44,7 +44,13 @@
 #include "sync.h"
 
 extern time_t passtime, greyexp, whiteexp, trapexp;
+#ifdef __OpenBSD__
 extern struct syslog_data sdata;
+#else
+#define	syslog_r(l, s, args...)	syslog(l,args)
+#define	openlog_r(i, l, f, s)	openlog(i, l, f)
+extern int sdata;					/* dummy */
+#endif
 extern struct passwd *pw;
 extern u_short cfg_port;
 extern pid_t jail_pid;

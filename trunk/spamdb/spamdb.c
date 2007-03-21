@@ -30,6 +30,7 @@
 #include <netdb.h>
 #include <ctype.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "grey.h"
 
