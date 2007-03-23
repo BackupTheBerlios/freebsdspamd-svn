@@ -43,10 +43,17 @@
 #include <netdb.h>
 #include <zlib.h>
 
+#ifdef __FreeBSD__
+int 		  use_pf = 1;
+int 		  ipfw_tabno = 2;
+#include <net/if.h>
+#include <netinet/ip_fw.h>
+#endif
+
 #define PATH_FTP		"/usr/bin/ftp"
 #define PATH_PFCTL		"/sbin/pfctl"
 #ifndef PATH_SPAMD_CONF
-#define PATH_SPAMD_CONF		"/etc/mail/spamd.conf"
+#define PATH_SPAMD_CONF		"/usr/local/etc/mail/spamd.conf"
 #endif
 #define SPAMD_ARG_MAX		256 /* max # of args to an exec */
 
@@ -87,6 +94,9 @@ int		  cmpbl(const void *, const void *);
 struct cidr	**collapse_blacklist(struct bl *, size_t);
 int		  configure_spamd(u_short, char *, char *, struct cidr **);
 int		  configure_pf(struct cidr **);
+#ifdef __FreeBSD__
+int		  configure_ipfw(struct cidr **);
+#endif
 int		  getlist(char **, char *, struct blacklist *, struct blacklist *);
 __dead void	  usage(void);
 
@@ -669,6 +679,52 @@ configure_pf(struct cidr **blacklists)
 	return (0);
 }
 
+#ifdef __FreeBSD__
+int
+configure_ipfw(struct cidr **blacklists)
+{
+	static int s = -1;
+	ipfw_table_entry ent;
+
+	if (s == -1)
+		s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+	if (s < 0)
+	{
+		err(1, "IPFW socket unavailable");
+		return (-1);
+	}
+
+	/* flush the table */   
+	ent.tbl = ipfw_tabno;
+	if (setsockopt(s, IPPROTO_IP, IP_FW_TABLE_FLUSH,  &ent.tbl, sizeof(ent.tbl)) < 0)
+	{
+		err(1, "IPFW setsockopt(IP_FW_TABLE_FLUSH)");
+		return (-1);
+	}
+
+	while (*blacklists != NULL) {
+		struct cidr *b = *blacklists;
+
+		while (b->addr != 0) {
+			/* add b to ipfw_tabno */
+			ent.tbl = ipfw_tabno;
+			ent.masklen = b->bits;
+			ent.value = 0;
+			inet_aton(atop(b->addr), (struct in_addr *)&ent.addr);
+			if (setsockopt(s, IPPROTO_IP, IP_FW_TABLE_ADD,  &ent, sizeof(ent)) < 0)
+			{
+				err(1, "IPFW setsockopt(IP_FW_TABLE_ADD)");
+				return (-1);
+			}
+			b++;
+		}
+		blacklists++;
+	}
+
+	return(0);
+}
+#endif
+
 int
 getlist(char ** db_array, char *name, struct blacklist *blist,
     struct blacklist *blistnew)
@@ -772,8 +828,19 @@ send_blacklist(struct blacklist *blist, in_port_t port)
 			    blist->message, cidrs) == -1)
 				err(1, "Can't connect to spamd on port %d",
 				    port);
+#ifndef __FreeBSD__					
 			if (!greyonly && configure_pf(cidrs) == -1)
 				err(1, "pfctl failed");
+#else
+		if(use_pf){
+			if (!greyonly && configure_pf(cidrs) == -1)
+				err(1, "pfctl failed");
+		}
+		else{
+			if (!greyonly && configure_ipfw(cidrs) == -1)
+				err(1, "ipfw failed");
+		}
+#endif
 		}
 		for (tmp = cidrs; *tmp != NULL; tmp++)
 			free(*tmp);
@@ -785,8 +852,11 @@ send_blacklist(struct blacklist *blist, in_port_t port)
 __dead void
 usage(void)
 {
-
+#ifndef __FreeBSD__ 
 	fprintf(stderr, "usage: %s [-bdn]\n", __progname);
+#else	
+	fprintf(stderr, "usage: %s [-bdnmt]\n", __progname);
+#endif
 	exit(1);
 }
 
@@ -798,8 +868,11 @@ main(int argc, char *argv[])
 	struct blacklist *blists;
 	struct servent *ent;
 	int i, ch;
-
+#ifndef __FreeBSD__
 	while ((ch = getopt(argc, argv, "bdn")) != -1) {
+#else
+	while ((ch = getopt(argc, argv, "bdnm:t:")) != -1) {
+#endif
 		switch (ch) {
 		case 'n':
 			dryrun = 1;
@@ -810,6 +883,16 @@ main(int argc, char *argv[])
 		case 'b':
 			greyonly = 0;
 			break;
+#ifdef __FreeBSD__
+		case 't':
+			ipfw_tabno = atoi(optarg);
+			break;
+		case 'm':
+			if (strcmp(optarg, "ipfw") == 0)
+				use_pf=0;
+			break;
+
+#endif
 		default:
 			usage();
 			break;

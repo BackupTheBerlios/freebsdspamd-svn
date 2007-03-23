@@ -77,6 +77,10 @@ Debug mode reports a few pieces of information.
 .It Fl n
 Dry-run mode.
 No data is shipped.
+.It Fl m Ar ipfw Oc
+Use IPFW firewall instead of PF
+.It Fl t Ar <table> Oc
+IPFW table number (use only with '-m ipfw'), default: 2
 .El
 .Pp
 Lists are specified in the configuration file
