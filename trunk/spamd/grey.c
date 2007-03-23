@@ -1127,7 +1127,6 @@ static void
 check_spamd_db(void)
 {
 	HASHINFO hashinfo;
-	int i = -1;
 	DB *db;
 
 	/* check to see if /var/db/spamd exists, if not, create it */
@@ -1137,20 +1136,22 @@ check_spamd_db(void)
 	if (db == NULL) {
 		switch (errno) {
 		case ENOENT:
-			i = open(PATH_SPAMD_DB, O_RDWR|O_CREAT, 0644);
-			if (i == -1) {
+			db = dbopen(PATH_SPAMD_DB, O_EXLOCK|O_RDWR|O_CREAT, 0644, DB_HASH, &hashinfo);
+			if (db == NULL) {
 				syslog_r(LOG_ERR, &sdata,
 				    "create %s failed (%m)", PATH_SPAMD_DB);
 				exit(1);
 			}
-			/* if we are dropping privs, chown to that user */
-			if (pw && (fchown(i, pw->pw_uid, pw->pw_gid) == -1)) {
+			if (pw && (chown(PATH_SPAMD_DB, pw->pw_uid, pw->pw_gid) == -1)) {
 				syslog_r(LOG_ERR, &sdata,
 				    "chown %s failed (%m)", PATH_SPAMD_DB);
 				exit(1);
 			}
-			close(i);
+			db->sync(db, 0);
+			db->close(db);
+			
 			drop_privs();
+			
 			return;
 			break;
 		case EFTYPE:
