@@ -40,6 +40,10 @@
 #include <unistd.h>
 #include <netdb.h>
 
+#ifdef __FreeBSD__
+#include <netinet/ip_fw.h>
+#endif
+
 #include "grey.h"
 #include "sync.h"
 
@@ -77,6 +81,10 @@ char *traplist_msg = "\"Your address %A has mailed to spamtraps here\\n\"";
 
 pid_t db_pid = -1;
 int pfdev;
+#ifdef __FreeBSD__
+extern int ipfw_tabno, use_pf;
+#endif
+
 
 struct db_change {
 	SLIST_ENTRY(db_change)	entry;
@@ -290,7 +298,51 @@ configure_pf(char **addrs, int count)
 	sigaction(SIGCHLD, &sa, NULL);
 	return(0);
 }
+#ifdef __FreeBSD__
+int
+configure_ipfw(char **addrs, int count)
+{
+	static int s = -1;
+	ipfw_table_entry ent;
+	int i;
 
+	if (debug)
+		fprintf(stderr, "configure ipfw tabno: %d\n", ipfw_tabno);
+	if (s == -1)
+		s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+	if (s < 0)
+	{
+		syslog_r(LOG_INFO, &sdata, "IPFW socket unavailable (%m)");
+		return(-1);
+	}
+
+	/* flush the table */	
+	ent.tbl = ipfw_tabno;
+	if (setsockopt(s, IPPROTO_IP, IP_FW_TABLE_FLUSH,  &ent.tbl, sizeof(ent.tbl)) < 0)
+	{
+		syslog_r(LOG_INFO, &sdata, "IPFW setsockopt(IP_FW_TABLE_FLUSH) (%m)");
+		return(-1);
+	}
+
+	for (i = 0; i < count; i++)
+		if (addrs[i] != NULL)
+	{
+		/* add addrs[i] to tabno */
+		ent.tbl = ipfw_tabno;
+		ent.masklen = 32;
+		ent.value = 0;
+		inet_aton(addrs[i], (struct in_addr *)&ent.addr);
+		if (setsockopt(s, IPPROTO_IP, IP_FW_TABLE_ADD,  &ent, sizeof(ent)) < 0)
+		{
+			syslog_r(LOG_INFO, &sdata, "IPFW setsockopt(IP_FW_TABLE_ADD) (%m)");
+			return(-1);
+		}
+	}
+
+	return(0);
+}
+
+#endif
 char *
 dequotetolower(const char *addr)
 {
@@ -633,7 +685,8 @@ greyscan(char *dbname)
 	(void) do_changes(db);
 	db->close(db);
 	db = NULL;
-	configure_pf(whitelist, whitecount);
+	if(use_pf) configure_pf(whitelist, whitecount);
+	else configure_ipfw(whitelist, whitecount);
 	if (configure_spamd(traplist, trapcount, trapcfg) == -1)
 		syslog_r(LOG_DEBUG, &sdata, "configure_spamd failed");
 
@@ -1049,6 +1102,7 @@ drop_privs(void)
 	/*
 	 * lose root, continue as non-root user
 	 */
+	if(!use_pf) return; /* XXX */
 	if (pw) {
 		setgroups(1, &pw->pw_gid);
 		setegid(pw->pw_gid);
@@ -1193,7 +1247,7 @@ greywatcher(void)
 		 * child, talks to jailed spamd over greypipe,
 		 * updates db. has no access to pf.
 		 */
-		close(pfdev);
+		if(use_pf) close(pfdev);
 		setproctitle("(%s update)", PATH_SPAMD_DB);
 		greyreader();
 		/* NOTREACHED */
@@ -1215,7 +1269,8 @@ greywatcher(void)
 	sigaction(SIGCHLD, &sa, NULL);
 	sigaction(SIGINT, &sa, NULL);
 
-	setproctitle("(pf <spamd-white> update)");
+	if(use_pf) setproctitle("(pf <spamd-white> update)");
+	else setproctitle("(ipfw %d table update)",ipfw_tabno);
 	greyscanner();
 	/* NOTREACHED */
 	exit(1);

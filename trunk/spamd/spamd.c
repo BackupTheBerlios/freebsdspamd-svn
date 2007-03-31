@@ -55,6 +55,11 @@
 	#define HAS_NO_STRTONUM
 #endif
 
+#ifdef __FreeBSD__
+int ipfw_tabno = 1;
+int use_pf = 1;
+#endif
+
 
 extern int server_lookup(struct sockaddr *, struct sockaddr *,
     struct sockaddr *);
@@ -171,8 +176,11 @@ usage(void)
 	    "[-G passtime:greyexp:whiteexp]\n"
 	    "\t[-h hostname] [-l address] [-M address] [-n name] [-p port]\n"
 	    "\t[-S secs] [-s secs] "
-	    "[-w window] [-Y synctarget] [-y synclisten]\n",
-	    __progname);
+	    "[-w window] [-Y synctarget] [-y synclisten]\n"
+#ifdef __FreeBSD__
+	    "\t[-t table_no] [-m mode]\n"
+#endif
+	    ,__progname);
 
 	exit(1);
 }
@@ -1065,7 +1073,11 @@ main(int argc, char *argv[])
 	if (maxblack > maxfiles)
 		maxblack = maxfiles;
 	while ((ch =
+#ifndef __FreeBSD__
 	    getopt(argc, argv, "45l:c:B:p:bdG:h:r:s:S:M:n:vw:y:Y:")) != -1) {
+#else
+	    getopt(argc, argv, "45l:c:B:p:bdG:h:r:s:S:M:n:vw:y:Y:t:m:")) != -1) {
+#endif
 		switch (ch) {
 		case '4':
 			nreply = "450";
@@ -1166,6 +1178,15 @@ main(int argc, char *argv[])
 			sync_baddr = optarg;
 			syncrecv++;
 			break;
+#ifdef __FreeBSD__
+		case 't':
+			ipfw_tabno = atoi(optarg);
+			break;
+		case 'm':
+			if (strcmp(optarg, "ipfw") == 0)
+				use_pf=0;
+			break;
+#endif
 		default:
 			usage();
 			break;
