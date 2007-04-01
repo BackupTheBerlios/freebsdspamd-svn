@@ -53,7 +53,7 @@ int 		  ipfw_tabno = 2;
 #define PATH_FTP		"/usr/bin/ftp"
 #define PATH_PFCTL		"/sbin/pfctl"
 #ifndef PATH_SPAMD_CONF
-#define PATH_SPAMD_CONF		"/usr/local/etc/mail/spamd.conf"
+#define PATH_SPAMD_CONF		"/usr/local/etc/spamd/spamd.conf"
 #endif
 #define SPAMD_ARG_MAX		256 /* max # of args to an exec */
 
