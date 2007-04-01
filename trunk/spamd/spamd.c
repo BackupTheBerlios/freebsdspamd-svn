@@ -58,6 +58,7 @@
 #ifdef __FreeBSD__
 int ipfw_tabno = 1;
 int use_pf = 1;
+char *pid_file = "/var/run/spamd.pid";
 #endif
 
 
@@ -606,7 +607,7 @@ getcaddr(struct con *cp) {
 	if (error) 
 		cp->caddr[0] = '\0';
 }
-	
+
 
 void
 gethelo(char *p, size_t len, char *f)
@@ -1036,6 +1037,9 @@ get_maxfiles(void)
 int
 main(int argc, char *argv[])
 {
+#ifdef __FreeBSD__
+	FILE *fpid = NULL;
+#endif	
 	fd_set *fdsr = NULL, *fdsw = NULL;
 	struct sockaddr_in sin;
 	struct sockaddr_in lin;
@@ -1269,6 +1273,13 @@ main(int argc, char *argv[])
 	if (!pw)
 		pw = getpwnam("nobody");
 
+#ifdef __FreeBSD__
+	/* open the pid file just before daemon */
+	fpid = fopen(pid_file, "w");
+	if (fpid == NULL)
+		err(1, "couldn't create pid file \"%s\"", pid_file);
+#endif	
+
 	if (debug == 0) {
 		if (daemon(1, 1) == -1)
 			err(1, "daemon");
@@ -1336,6 +1347,18 @@ main(int argc, char *argv[])
 	}
 
 jail:
+#ifdef __FreeBSD__
+	/* after switch user and daemon write and close the pid file */
+	if (fpid) {
+		fprintf(fpid, "%ld\n", (long) getpid());
+		if (fclose(fpid) == EOF) {
+			syslog(LOG_ERR, "exiting (couldn't close pid file %s)", 
+				pid_file);
+			exit(1);
+		}
+	}
+#endif	
+
 	if (chroot("/var/empty") == -1 || chdir("/") == -1) {
 		syslog(LOG_ERR, "cannot chdir to /var/empty.");
 		exit(1);

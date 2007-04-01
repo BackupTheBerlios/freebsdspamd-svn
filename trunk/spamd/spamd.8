@@ -364,7 +364,7 @@ See
 for further details.
 .Pp
 The file
-.Pa /etc/mail/spamd.alloweddomains
+.Pa /usr/local/etc/spamd/spamd.alloweddomains
 can be used to specify a list of domainname suffixes, one per line, one of
 which must match each destination email address in the greylist.
 Any destination address which does not match one of the suffixes listed in
@@ -519,7 +519,7 @@ synchronisation messages, and send outgoing multicast messages through
 the network interface
 .Ar em0 :
 .Bd -literal -offset indent
-# /usr/libexec/spamd -y em0 -Y em0
+# /usr/local/libexec/spamd -y em0 -Y em0
 .Ed
 .Pp
 The second example will increase the multicast TTL to a value of 2,
@@ -531,12 +531,12 @@ and accept incoming unicast messages sent to
 .Ar example.somewhere.org
 only.
 .Bd -literal -offset indent
-# /usr/libexec/spamd -y example.somewhere.org -Y em0:2 \e
+# /usr/local/libexec/spamd -y example.somewhere.org -Y em0:2 \e
 	-Y foo.somewhere.org -Y bar.somewhere.org
 .Ed
 .Pp
 If the file
-.Pa /etc/mail/spamd.key
+.Pa /usr/local/etc/spamd/spamd.key
 exists,
 .Nm
 will calculate the message-digest fingerprint (checksum) for the file
@@ -544,18 +544,18 @@ and use it as a shared key to authenticate the synchronisation messages.
 The file itself can contain any data.
 For example, to create a secure random key:
 .Bd -literal -offset indent
-# dd if=/dev/arandom of=/etc/mail/spamd.key bs=2048 count=1
+# dd if=/dev/random of=/usr/local/etc/spamd/spamd.key bs=2048 count=1
 .Ed
 .Pp
 The file needs to be copied to all hosts
 sending or receiving synchronisation messages.
 .Sh FILES
-.Bl -tag -width "/etc/mail/spamd.alloweddomainsXX" -compact
-.It /etc/mail/spamd.alloweddomains
+.Bl -tag -width "/usr/local/etc/spamd/spamd.alloweddomainsXX" -compact
+.It /usr/local/etc/spamd/spamd.alloweddomains
 Required suffixes for greytrapping.
-.It /etc/mail/spamd.conf
+.It /usr/local/etc/spamd/spamd.conf
 Default configuration file.
-.It /etc/mail/spamd.key
+.It /usr/local/etc/spamd/spamd.key
 Authentication key for synchronisation messages.
 .It /var/db/spamd
 Greylisting database.

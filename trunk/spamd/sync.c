@@ -41,7 +41,8 @@
 #ifdef __OpenBSD__
 #include <sha1.h>
 #else
-char   *SHA1_File(const char *, char *);
+/* Stolen from sha.h */
+extern char   *SHA1_File(const char *, char *);
 #define SHA1File SHA1_File
 #endif
 

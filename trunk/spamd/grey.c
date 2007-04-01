@@ -582,8 +582,7 @@ db_notin(DB *db, char *key)
 	memset(&dbk, 0, sizeof(dbk));
 	dbk.size = strlen(key);
 	dbk.data = key;
-	memset(&dbd, 0,
- sizeof(dbd));
+	memset(&dbd, 0, sizeof(dbd));
 	i = db->get(db, &dbk, &dbd, 0);
 	if (i == -1)
 		return (-1);

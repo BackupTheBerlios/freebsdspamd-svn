@@ -38,7 +38,7 @@
 #define SPAM_SYNC_MCASTTTL	IP_DEFAULT_MULTICAST_TTL
 #define SPAM_SYNC_HMAC_LEN	20	/* SHA1 */
 #define SPAM_SYNC_MAXSIZE	1408
-#define SPAM_SYNC_KEY		"/etc/mail/spamd.key"
+#define SPAM_SYNC_KEY		"/usr/local/etc/spamd/spamd.key"
 
 struct spam_synchdr {
 	u_int8_t	sh_version;
