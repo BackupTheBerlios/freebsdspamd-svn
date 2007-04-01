@@ -95,9 +95,9 @@ configuration for logging such connections is as follows:
 EXT_IF = "fxp0"
 MAILHOSTS = "{129.128.11.10, 129.128.11.43}"
 pass in log on $EXT_IF inet proto tcp to $MAILHOSTS \e
-	port smtp
+	port smtp keep state
 pass out log on $EXT_IF inet proto tcp from $MAILHOSTS \e
-	to any port smtp
+	to any port smtp keep state
 .Ed
 .Pp
 .Nm

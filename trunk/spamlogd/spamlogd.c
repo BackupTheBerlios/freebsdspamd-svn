@@ -83,6 +83,7 @@ struct syslog_data	 sdata	= SYSLOG_DATA_INIT;
 #define	openlog_r(i, l, f, s)	openlog(i, l, f)
 #define	closelog_r(l)	closelog()
 int sdata = 0;					/* dummy */
+char *pid_file = "/var/run/spamlogd.pid";
 #endif
 
 extern char		*__progname;
@@ -304,6 +305,9 @@ usage(void)
 int
 main(int argc, char **argv)
 {
+#ifdef __FreeBSD__
+	FILE		*fpid = NULL;
+#endif	
 	int		 ch;
 	struct passwd	*pw;
 	pcap_handler	 phandler = logpkt_handler;
@@ -357,6 +361,13 @@ main(int argc, char **argv)
 		if (syncfd == -1)
 			err(1, "sync init");
 	}
+	
+#ifdef __FreeBSD__
+	/* open the pid file just before switch the user */
+	fpid = fopen(pid_file, "w");
+	if (fpid == NULL)
+		 err(1, "couldn't create pid file \"%s\"", pid_file);
+#endif	
 
 	/* privdrop */
 	pw = getpwnam("_spamd");
@@ -373,6 +384,13 @@ main(int argc, char **argv)
 			err(1, "daemon");
 		tzset();
 		openlog_r("spamlogd", LOG_PID | LOG_NDELAY, LOG_DAEMON, &sdata);
+	}
+
+	/* after switch user and daemon write and close the pid file */
+	if (fpid) {
+		fprintf(fpid, "%ld\n", (long) getpid());
+		logmsg(LOG_ERR, "exiting (couldn't close pid file %s)", pid_file);
+		exit(1);
 	}
 
 	pcap_loop(hpcap, -1, phandler, NULL);

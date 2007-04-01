@@ -6,7 +6,7 @@ MAN=	spamlogd.8
 
 CFLAGS+= -Wall -Wstrict-prototypes -I${.CURDIR}/../spamd
 LDADD+= -lpcap -lcrypto -lmd
-DPADD+=	${LIBPCAP}
+DPADD+= ${LIBPCAP} ${LIBMD}
 .PATH:  ${.CURDIR}/../spamd
 
 .include <bsd.prog.mk>
