@@ -409,8 +409,8 @@ main(int argc, char **argv)
 	/* after switch user and daemon write and close the pid file */
 	if (fpid) {
 		fprintf(fpid, "%ld\n", (long) getpid());
-		logmsg(LOG_ERR, "exiting (couldn't close pid file %s)", pid_file);
-		exit(1);
+		if (fclose(fpid) == EOF)
+			err(1, "couldn't close pid file %s", pid_file);
 	}
 
 	pcap_loop(hpcap, -1, phandler, NULL);
