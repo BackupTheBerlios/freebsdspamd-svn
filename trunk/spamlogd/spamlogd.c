@@ -84,6 +84,7 @@ struct syslog_data	 sdata	= SYSLOG_DATA_INIT;
 #define	closelog_r(l)	closelog()
 int sdata = 0;					/* dummy */
 char *pid_file = "/var/run/spamlogd.pid";
+int use_pf = 1;
 #endif
 
 extern char		*__progname;
@@ -124,6 +125,12 @@ init_pcap(void)
 	struct bpf_program	bpfp;
 	char	filter[PCAPFSIZ] = "ip and port 25 and action pass "
 		    "and tcp[13]&0x12=0x2";
+			
+#ifdef __FreeBSD__
+	if(!use_pf) {
+		strncpy(filter,"ip and port 25 and tcp[13]&0x12=0x2",sizeof(filter));
+	}
+#endif
 
 	if ((hpcap = pcap_open_live(pflogif, PCAPSNAP, 1, PCAPTIMO,
 	    errbuf)) == NULL) {
@@ -297,8 +304,11 @@ void
 usage(void)
 {
 	fprintf(stderr,
-	    "usage: %s [-DI] [-i interface] [-l pflog_interface] [-Y synctarget]\n",
-	    __progname);
+	    "usage: %s [-DI] [-i interface] [-l pflog_interface] [-Y synctarget]\n"
+#ifdef __FreeBSD__
+		"\t[-m mode]\n"
+#endif
+	    ,__progname);
 	exit(1);
 }
 
@@ -319,8 +329,11 @@ main(int argc, char **argv)
 	if ((ent = getservbyname("spamd-sync", "udp")) == NULL)
 		errx(1, "Can't find service \"spamd-sync\" in /etc/services");
 	sync_port = ntohs(ent->s_port);
-
+#ifndef __FreeBSD__
 	while ((ch = getopt(argc, argv, "DIi:l:Y:")) != -1) {
+#else
+	while ((ch = getopt(argc, argv, "DIi:l:Y:m:")) != -1) {
+#endif
 		switch (ch) {
 		case 'D':
 			flag_debug = 1;
@@ -339,6 +352,13 @@ main(int argc, char **argv)
 				sync_iface = optarg;
 			syncsend++;
 			break;
+#ifdef __FreeBSD__
+		case 'm':
+			if (strcmp(optarg, "ipfw") == 0)
+				use_pf=0;
+			break;
+#endif
+			
 		default:
 			usage();
 			/* NOTREACHED */
