@@ -48,6 +48,8 @@
 .Op Fl w Ar window
 .Op Fl Y Ar synctarget
 .Op Fl y Ar synclisten
+.Op Fl m Ar mode
+.Op Fl t Ar table_number
 .Ek
 .Sh DESCRIPTION
 .Nm
@@ -219,6 +221,10 @@ This option can be specified only once.
 See also
 .Sx SYNCHRONISATION
 below.
+.It Fl m Ar mode
+Firewall type. Can be pf (default) or ipfw.
+.It Fl t Ar table_number
+IPFW table number. Use only with -m ipfw.
 .El
 .Pp
 When run in default mode,
