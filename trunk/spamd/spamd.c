@@ -832,6 +832,11 @@ nextstate(struct con *cp)
 				if (greylist && cp->blacklists == NULL) {
 					/* send this info to the greylister */
 					getcaddr(cp);
+					if (debug)
+						fprintf(stderr,
+					    "CO:%s\nHE:%s\nIP:%s\nFR:%s\nTO:%s\n",
+					    cp->caddr, cp->helo, cp->addr,
+					    cp->mail, cp->rcpt);
 					fprintf(grey,
 					    "CO:%s\nHE:%s\nIP:%s\nFR:%s\nTO:%s\n",
 					    cp->caddr, cp->helo, cp->addr,
@@ -1286,13 +1291,17 @@ main(int argc, char *argv[])
 	}
 
 	if (greylist) {
+#ifdef __FreeBSD__
 		if(use_pf){
+#endif			
 			pfdev = open("/dev/pf", O_RDWR);
 			if (pfdev == -1) {
 				syslog_r(LOG_ERR, &sdata, "open /dev/pf: %m");
 				exit(1);
 			}
-		}
+#ifdef __FreeBSD__
+		} 	
+#endif
 
 		maxblack = (maxblack >= maxcon) ? maxcon - 100 : maxblack;
 		if (maxblack < 0)

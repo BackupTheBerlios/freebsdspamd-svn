@@ -172,6 +172,17 @@ server_lookup4(struct sockaddr_in *client, struct sockaddr_in *proxy,
     struct sockaddr_in *server)
 {
 	struct pfioc_natlook pnl;
+	
+#ifdef __FreeBSD__
+	if(!use_pf){
+		memset(server, 0, sizeof(struct sockaddr_in));
+		server->sin_family = AF_INET;
+		server->sin_len = sizeof(struct sockaddr_in);
+		memcpy(&server->sin_addr.s_addr, &proxy->sin_addr.s_addr, sizeof proxy->sin_addr.s_addr);
+		memcpy(&server->sin_port, &proxy->sin_port, sizeof proxy->sin_port);
+		return (0);
+	}
+#endif
 
 	memset(&pnl, 0, sizeof pnl);
 	pnl.direction = PF_OUT;
@@ -200,6 +211,17 @@ server_lookup6(struct sockaddr_in6 *client, struct sockaddr_in6 *proxy,
     struct sockaddr_in6 *server)
 {
 	struct pfioc_natlook pnl;
+
+#ifdef __FreeBSD__
+	if(!use_pf){
+		memset(server, 0, sizeof(struct sockaddr_in6));
+		server->sin6_family = AF_INET6;
+		server->sin6_len = sizeof(struct sockaddr_in6);
+		memcpy(&server->sin6_addr.s6_addr, &proxy->sin6_addr.s6_addr, sizeof proxy->sin6_addr.s6_addr);
+		memcpy(&server->sin6_port, &proxy->sin6_port, sizeof proxy->sin6_port);
+		return (0);
+	}
+#endif
 
 	memset(&pnl, 0, sizeof pnl);
 	pnl.direction = PF_OUT;
@@ -302,25 +324,29 @@ configure_pf(char **addrs, int count)
 int
 configure_ipfw(char **addrs, int count)
 {
-	static int s = -1;
 	ipfw_table_entry ent;
 	int i;
+	static int ipfw_socket;
+	
+	ipfw_socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
 
 	if (debug)
 		fprintf(stderr, "configure ipfw tabno: %d\n", ipfw_tabno);
-	if (s == -1)
-		s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
-	if (s < 0)
+	if (ipfw_socket < 0)
 	{
 		syslog_r(LOG_INFO, &sdata, "IPFW socket unavailable (%m)");
+		if (debug)
+			fprintf(stderr, "IPFW socket unavailable (%s)\n",strerror(errno));
 		return(-1);
 	}
 
 	/* flush the table */	
 	ent.tbl = ipfw_tabno;
-	if (setsockopt(s, IPPROTO_IP, IP_FW_TABLE_FLUSH,  &ent.tbl, sizeof(ent.tbl)) < 0)
+	if (setsockopt(ipfw_socket, IPPROTO_IP, IP_FW_TABLE_FLUSH,  &ent.tbl, sizeof(ent.tbl)) < 0)
 	{
 		syslog_r(LOG_INFO, &sdata, "IPFW setsockopt(IP_FW_TABLE_FLUSH) (%m)");
+		if (debug)
+			fprintf(stderr, "IPFW setsockopt(IP_FW_TABLE_FLUSH) (%s)\n",strerror(errno));
 		return(-1);
 	}
 
@@ -332,7 +358,7 @@ configure_ipfw(char **addrs, int count)
 		ent.masklen = 32;
 		ent.value = 0;
 		inet_aton(addrs[i], (struct in_addr *)&ent.addr);
-		if (setsockopt(s, IPPROTO_IP, IP_FW_TABLE_ADD,  &ent, sizeof(ent)) < 0)
+		if (setsockopt(ipfw_socket, IPPROTO_IP, IP_FW_TABLE_ADD,  &ent, sizeof(ent)) < 0)
 		{
 			syslog_r(LOG_INFO, &sdata, "IPFW setsockopt(IP_FW_TABLE_ADD) (%m)");
 			return(-1);
@@ -1202,7 +1228,7 @@ check_spamd_db(void)
 			db->sync(db, 0);
 			db->close(db);
 			
-			drop_privs();
+			if(use_pf) drop_privs();
 			
 			return;
 			break;
@@ -1212,7 +1238,7 @@ check_spamd_db(void)
 			 * convert.
 			 */
 			convert_spamd_db();
-			drop_privs();
+			if(use_pf) drop_privs();
 			return;
 			break;
 		default:
@@ -1223,7 +1249,7 @@ check_spamd_db(void)
 	}
 	db->sync(db, 0);
 	db->close(db);
-	if(use_pf) drop_privs(); /* XXX */
+	if(use_pf) drop_privs(); 
 }
 
 
@@ -1245,7 +1271,10 @@ greywatcher(void)
 		 * child, talks to jailed spamd over greypipe,
 		 * updates db. has no access to pf.
 		 */
-		if(use_pf) close(pfdev);
+		if(use_pf) 
+			close(pfdev);
+		else 
+			drop_privs();
 		setproctitle("(%s update)", PATH_SPAMD_DB);
 		greyreader();
 		/* NOTREACHED */
@@ -1268,7 +1297,7 @@ greywatcher(void)
 	sigaction(SIGINT, &sa, NULL);
 
 	if(use_pf) setproctitle("(pf <spamd-white> update)");
-	else setproctitle("(ipfw %d table update)",ipfw_tabno);
+	else setproctitle("(ipfw table %d update)",ipfw_tabno);
 	greyscanner();
 	/* NOTREACHED */
 	exit(1);
