@@ -1136,7 +1136,7 @@ convert_spamd_db(void)
 		exit(1);
 	}
 	memset(&hashinfo, 0, sizeof(hashinfo));
-	db2 = dbopen(sfn, O_EXLOCK|O_RDWR, 0600, DB_HASH, &hashinfo);
+	db2 = dbopen(sfn, O_EXLOCK|O_RDWR|O_CREAT, 0600, DB_HASH, &hashinfo);
 	if (db2 == NULL) {
 		unlink(sfn);
 		syslog_r(LOG_ERR, &sdata,
