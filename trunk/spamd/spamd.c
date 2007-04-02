@@ -1286,10 +1286,12 @@ main(int argc, char *argv[])
 	}
 
 	if (greylist) {
-		pfdev = open("/dev/pf", O_RDWR);
-		if (pfdev == -1) {
-			syslog_r(LOG_ERR, &sdata, "open /dev/pf: %m");
-			exit(1);
+		if(use_pf){
+			pfdev = open("/dev/pf", O_RDWR);
+			if (pfdev == -1) {
+				syslog_r(LOG_ERR, &sdata, "open /dev/pf: %m");
+				exit(1);
+			}
 		}
 
 		maxblack = (maxblack >= maxcon) ? maxcon - 100 : maxblack;

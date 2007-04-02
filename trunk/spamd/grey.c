@@ -1101,7 +1101,6 @@ drop_privs(void)
 	/*
 	 * lose root, continue as non-root user
 	 */
-	if(!use_pf) return; /* XXX */
 	if (pw) {
 		setgroups(1, &pw->pw_gid);
 		setegid(pw->pw_gid);
@@ -1224,7 +1223,7 @@ check_spamd_db(void)
 	}
 	db->sync(db, 0);
 	db->close(db);
-	drop_privs();
+	if(use_pf) drop_privs(); /* XXX */
 }
 
 
