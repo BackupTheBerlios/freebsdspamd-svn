@@ -401,6 +401,20 @@ readsuffixlists(void)
 		SLIST_REMOVE_HEAD(&match_suffix, entry);
 	if ((fp = fopen(alloweddomains_file, "r")) != NULL) {
 		while ((buf = fgetln(fp, &len))) {
+#ifdef __FreeBSD__
+			/* strip white space-characters */
+			while (isspace(buf[len-1]) && len >= 1)
+				len--;
+			while (isspace(*buf) && len >= 1) {
+				*buf++;
+				len--;
+			}
+			/* jump over comments and blank lines */
+			if (*buf == '#' || *buf == '\n')
+				continue;
+			if (len == 0)
+				continue;
+#endif
 			if (buf[len-1] == '\n')
 				len--;
 			if ((m = malloc(sizeof(struct mail_addr))) == NULL)

@@ -390,6 +390,9 @@ which must match each destination email address in the greylist.
 Any destination address which does not match one of the suffixes listed in
 .Pa spamd.alloweddomains
 will be trapped, exactly as if it were sent to a spamtrap address.
+Comment lines beginning with
+.Ar #
+are ignored.
 .Pp
 For example, if
 .Pa spamd.alloweddomains
