@@ -1281,8 +1281,11 @@ main(int argc, char *argv[])
 #ifdef __FreeBSD__
 	/* open the pid file just before daemon */
 	fpid = fopen(pid_file, "w");
-	if (fpid == NULL)
+	if (fpid == NULL) {
+		syslog(LOG_ERR, "exiting (couldn't create pid file %s)", 
+			pid_file);
 		err(1, "couldn't create pid file \"%s\"", pid_file);
+	}
 #endif	
 
 	if (debug == 0) {
