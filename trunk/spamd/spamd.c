@@ -44,10 +44,6 @@
 #include "grey.h"
 #include "sync.h"
 
-#if __FreeBSD_version < 601000
-	#define HAS_NO_STRTONUM
-#endif
-
 #ifdef __FreeBSD__
 int ipfw_tabno = 1;
 int use_pf = 1;
@@ -1054,10 +1050,7 @@ main(int argc, char *argv[])
 	struct servent *ent;
 	struct rlimit rlp;
 	char *bind_address = NULL;
-	/* supress warning at versions before FreeBSD 6.1 */
-#ifndef HAS_NO_STRTONUM
 	const char *errstr;
-#endif
 	char *sync_iface = NULL;
 	char *sync_baddr = NULL;
 
@@ -1145,7 +1138,6 @@ main(int argc, char *argv[])
 			stutter = i;
 			break;
 		case 'S':
-#ifndef HAS_NO_STRTONUM
 			/* 
 			 * strtonum is aviable with FreeBSD 6.1,
 			 * for older versions we have to fallback
@@ -1155,14 +1147,6 @@ main(int argc, char *argv[])
 			if (errstr)
 				usage();
 			grey_stutter = i;
-#else
-			/* the old way (fallback) */
-			i = atoi(optarg);
-			if (i < 0 || i > 90)
-				usage();
-			grey_stutter = i;
-#endif
-
 			break;
 		case 'M':
 			low_prio_mx_ip = optarg;

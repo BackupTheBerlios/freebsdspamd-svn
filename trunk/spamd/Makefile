@@ -2,6 +2,11 @@
 
 PROG=	spamd
 SRCS=	spamd.c sdl.c grey.c sync.c
+
+#if __FreeBSD_version < 601000
+SRCS+=	strtonum.c
+#endif
+
 MAN=	spamd.8
 
 CFLAGS+= -Wall -Wstrict-prototypes
