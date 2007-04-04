@@ -1076,9 +1076,9 @@ main(int argc, char *argv[])
 		maxblack = maxfiles;
 	while ((ch =
 #ifndef __FreeBSD__
-	    getopt(argc, argv, "45l:c:B:p:bdG:h:r:s:S:M:n:vw:y:Y:")) != -1) {
+	    getopt(argc, argv, "45l:c:B:p:bdG:h:s:S:M:n:vw:y:Y:")) != -1) {
 #else
-	    getopt(argc, argv, "45l:c:B:p:bdG:h:r:s:S:M:n:vw:y:Y:t:m:")) != -1) {
+	    getopt(argc, argv, "45l:c:B:p:bdG:h:s:S:M:n:vw:y:Y:t:m:")) != -1) {
 #endif
 		switch (ch) {
 		case '4':
