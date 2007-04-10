@@ -62,9 +62,9 @@ if [ "$2" = "PRE-INSTALL" ]; then
     echo "You need a \"${SPAMDUSER}\" user."
     if yesno "Would you like me to create it" "YES"; then
       /usr/sbin/pw useradd "${SPAMDUSER}" -u "${SPAMDUID}" -g "${SPAMDGROUP}" -h - -d "${SPAMDDIR}" \
-        -s /sbin/nologin -c "SPAMD pseudo-user" || \
+        -s /sbin/nologin -c "spamd pseudo-user" || \
         /usr/sbin/pw useradd "${SPAMDUSER}" -g "${SPAMDGROUP}" -h - -d "${SPAMDDIR}" \
-        -s /sbin/nologin -c "SPAMD pseudo-user" || exit
+        -s /sbin/nologin -c "spamd pseudo-user" || exit
     else
       echo "Please create the \"${SPAMDUSER}\" user manually and try again."
       exit 1

@@ -25,9 +25,12 @@ LOCAL_PFCTL=	/sbin/pfctl
 
 #USE_RC_SUBR?=	spamd.sh spamlogd.sh
 
-.if !defined(BATCH) && !defined(PACKAGE_BUILDING)
-IS_INTERACTIVE= yes
-.endif
+SPAMDUSER?=	_spamd
+SPAMDGROUP?=	_spamd
+SPAMDDIR?=	/nonexistence
+
+SPAMDUID=	132
+SPAMDGID=	${SPAMDUID}
 
 MAN5=		spamd.conf.5
 MAN8=		spamd.8 spamd-setup.8 spamdb.8 spamlogd.8
@@ -39,6 +42,22 @@ PLIST_FILES=	libexec/spamd libexec/spamlogd \
 
 CONFIG_DIR=		${PREFIX}/etc/spamd
 SAMPLE_SPAMD_CONF=	${CONFIG_DIR}/spamd.conf.sample
+
+PLIST_SUB=	SPAMDDIR=${SPAMDDIR} \
+		SPAMDUSER=${SPAMDUSER} \
+		SPAMDGROUP=${SPAMDGROUP} \
+		SPAMDUID=${SPAMDUID} \
+		SPAMDGID=${SPAMDGID}
+
+SUB_FILES=	pkg-install \
+		pkg-deinstall \
+		pkg-message
+
+SUB_LIST=	PREFIX=${PREFIX} \
+		${PLIST_SUB}
+
+pre-install:
+	@${SH} ${PKGINSTALL} ${DISTNAME} PRE-INSTALL
 
 do-install:
 	${INSTALL_PROGRAM} ${WRKSRC}/spamd/spamd ${PREFIX}/libexec
