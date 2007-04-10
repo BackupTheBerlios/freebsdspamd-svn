@@ -1,11 +1,16 @@
 **********************************************************************
+To enable spamd you need:
 
- Enable spamd in /etc/rc.conf with the following line:
-
+1) Enable spamd in /etc/rc.conf with the following line:
    spamd_enable="YES"
 
- Configuration template is available in %%PREFIX%%/etc/spamd as
- spamd.conf.sample file.  Copy then to spamd.conf file and
- edit to suit your needs.  
+2) Configuration template is available in %%PREFIX%%/etc/spamd as
+   spamd.conf.sample file.  Copy then to spamd.conf file and
+   edit to suit your needs.
+
+3) Add spamd to /etc/services with the lines:
+spamd		8025/tcp		# spamd(8)
+spamd-sync	8025/udp		# spamd(8) synchronisation
+spamd-cfg	8026/tcp		# spamd(8) configuration
 
 **********************************************************************
