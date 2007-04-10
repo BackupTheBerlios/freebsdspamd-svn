@@ -23,7 +23,7 @@ BROKEN=		"OpenBSD 3.5 pf/pfctl is necessary for this port to function properly."
 LOCAL_PFCTL=	/sbin/pfctl
 .endif
 
-USE_RC_SUBR?=	spamd.sh spamlogd.sh
+#USE_RC_SUBR?=	spamd.sh spamlogd.sh
 
 .if !defined(BATCH) && !defined(PACKAGE_BUILDING)
 IS_INTERACTIVE= yes
@@ -39,18 +39,6 @@ PLIST_FILES=	libexec/spamd libexec/spamlogd \
 
 CONFIG_DIR=		${PREFIX}/etc/spamd
 SAMPLE_SPAMD_CONF=	${CONFIG_DIR}/spamd.conf.sample
-
-post-patch:
-	@${REINPLACE_CMD} -e 's|%%LOCAL_PFCTL%%|${LOCAL_PFCTL}|;        \
-	s|%%LOCAL_SPAMD_CONF%%|${PREFIX}/etc/spamd/spamd.conf|'             \
-	${WRKSRC}/spamd-setup/spamd-setup.c
-	@${REINPLACE_CMD} -e 's|/etc/spamd/spamd.conf|${PREFIX}/etc/spamd/spamd.conf|' \
-	@${WRKSRC}/spamd/spamd.8 ${WRKSRC}/spamd-setup/spamd-setup.8
-
-pre-su-install:
-.if !defined(BATCH) && !defined(PACKAGE_BUILDING)
-	@${SETENV} PKG_PREFIX=${PREFIX} ${SH} ${PKGINSTALL} ${PKGNAME} PRE-INSTALL
-.endif
 
 do-install:
 	${INSTALL_PROGRAM} ${WRKSRC}/spamd/spamd ${PREFIX}/libexec
