@@ -1,0 +1,75 @@
+# New ports collection makefile for:    spamd
+# Date created:         04 April 2007
+# Whom:			Max Laier <max@love2party.net>
+#
+# $FreeBSD$
+#
+
+PORTNAME=	spamd
+PORTVERSION=	4.1.0
+CATEGORIES=	mail
+MASTER_SITES=	BERLIOS
+MASTER_SITE_SUBDIR=freebsdspamd
+DISTNAME=	${PORTNAME}-${PORTVERSION}
+
+MAINTAINER=	samm@os2.kiev.ua
+COMMENT=	Traps spammers with a very slow smtp-login and return 4xx error
+
+.include <bsd.port.pre.mk>
+
+.if ${OSVERSION} < 502117
+BROKEN=		"OpenBSD 3.5 pf/pfctl is necessary for this port to function properly."
+.else
+LOCAL_PFCTL=	/sbin/pfctl
+.endif
+
+USE_RC_SUBR?=	spamd.sh spamlogd.sh
+
+.if !defined(BATCH) && !defined(PACKAGE_BUILDING)
+IS_INTERACTIVE= yes
+.endif
+
+MAN5=		spamd.conf.5
+MAN8=		spamd.8 spamd-setup.8 spamdb.8 spamlogd.8
+
+PLIST_DIRS=	etc/spamd
+PLIST_FILES=	libexec/spamd libexec/spamlogd \
+		sbin/spamd-setup sbin/spamdb \
+		etc/spamd/spamd.conf.sample
+
+CONFIG_DIR=		${PREFIX}/etc/spamd
+SAMPLE_SPAMD_CONF=	${CONFIG_DIR}/spamd.conf.sample
+
+post-patch:
+	@${REINPLACE_CMD} -e 's|%%LOCAL_PFCTL%%|${LOCAL_PFCTL}|;        \
+	s|%%LOCAL_SPAMD_CONF%%|${PREFIX}/etc/spamd/spamd.conf|'             \
+	${WRKSRC}/spamd-setup/spamd-setup.c
+	@${REINPLACE_CMD} -e 's|/etc/spamd/spamd.conf|${PREFIX}/etc/spamd/spamd.conf|' \
+	@${WRKSRC}/spamd/spamd.8 ${WRKSRC}/spamd-setup/spamd-setup.8
+
+pre-su-install:
+.if !defined(BATCH) && !defined(PACKAGE_BUILDING)
+	@${SETENV} PKG_PREFIX=${PREFIX} ${SH} ${PKGINSTALL} ${PKGNAME} PRE-INSTALL
+.endif
+
+do-install:
+	${INSTALL_PROGRAM} ${WRKSRC}/spamd/spamd ${PREFIX}/libexec
+	${INSTALL_PROGRAM} ${WRKSRC}/spamlogd/spamlogd ${PREFIX}/libexec
+	${INSTALL_PROGRAM} ${WRKSRC}/spamd-setup/spamd-setup ${PREFIX}/sbin
+	${INSTALL_PROGRAM} ${WRKSRC}/spamdb/spamdb ${PREFIX}/sbin
+	${INSTALL_MAN} ${WRKSRC}/etc/spamd.conf.5 ${PREFIX}/man/man5
+	${INSTALL_MAN} ${WRKSRC}/spamd/spamd.8 ${PREFIX}/man/man8
+	${INSTALL_MAN} ${WRKSRC}/spamd-setup/spamd-setup.8 ${PREFIX}/man/man8
+	${INSTALL_MAN} ${WRKSRC}/spamdb/spamdb.8 ${PREFIX}/man/man8
+	${INSTALL_MAN} ${WRKSRC}/spamlogd/spamlogd.8 ${PREFIX}/man/man8
+	@if [ ! -d ${CONFIG_DIR} ]; then                        \
+		${MKDIR} ${CONFIG_DIR}; \
+	fi
+	@if [ ! -f ${SAMPLE_SPAMD_CONF} ]; then                 \
+		${ECHO_MSG} "Installing ${SAMPLE_SPAMD_CONF} file."; \
+		${ECHO_MSG} "${INSTALL_DATA} -v -p ${WRKSRC}/etc/spamd.conf ${SAMPLE_SPAMD_CONF}";                              \
+		${INSTALL_DATA} -v -p ${WRKSRC}/etc/spamd.conf  \
+		${SAMPLE_SPAMD_CONF};                           \
+	fi
+
+.include <bsd.port.post.mk>
