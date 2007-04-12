@@ -59,6 +59,9 @@ SUB_LIST=	PREFIX=${PREFIX} \
 pre-install:
 	@${SH} ${PKGINSTALL} ${DISTNAME} PRE-INSTALL
 
+post-install:
+	@${CAT} ${PKGMESSAGE}
+
 do-install:
 	${INSTALL_PROGRAM} ${WRKSRC}/spamd/spamd ${PREFIX}/libexec
 	${INSTALL_PROGRAM} ${WRKSRC}/spamlogd/spamlogd ${PREFIX}/libexec
