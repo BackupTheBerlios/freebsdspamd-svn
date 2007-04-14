@@ -23,11 +23,11 @@ BROKEN=		"OpenBSD 3.5 pf/pfctl is necessary for this port to function properly."
 LOCAL_PFCTL=	/sbin/pfctl
 .endif
 
-#USE_RC_SUBR?=	spamd.sh spamlogd.sh
+USE_RC_SUBR?=	pfspamd pfspamlogd
 
 SPAMDUSER?=	_spamd
 SPAMDGROUP?=	_spamd
-SPAMDDIR?=	/nonexistence
+SPAMDDIR?=	/var/empty
 
 SPAMDUID=	132
 SPAMDGID=	${SPAMDUID}
@@ -51,7 +51,9 @@ PLIST_SUB=	SPAMDDIR=${SPAMDDIR} \
 
 SUB_FILES=	pkg-install \
 		pkg-deinstall \
-		pkg-message
+		pkg-message \
+		pfspamlogd \
+		pfspamd
 
 SUB_LIST=	PREFIX=${PREFIX} \
 		${PLIST_SUB}

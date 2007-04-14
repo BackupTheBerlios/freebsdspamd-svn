@@ -1,0 +1,64 @@
+#!/bin/sh
+#
+# $FreeBSD$
+#
+
+# PROVIDE: pfspamd
+# REQUIRE: NETWORKING SERVERS
+# BEFORE:  DAEMON
+# KEYWORD: shutdown
+
+#
+# Define these spamd_* variables in one of these files:
+#       /etc/rc.conf
+#       /etc/rc.conf.local
+#
+# pfspamd_enable="YES"	# Run the spamd(8) daemon (YES/NO).
+# pfspamd_flags=""	# Extra flags for spamd(8) (if enabled).
+#
+# DO NOT CHANGE THESE DEFAULT VALUES HERE
+#
+pfspamd_enable=${pfspamd_enable:-"NO"}
+pfspamd_flags=${pfspamd_flags:-""}
+
+. %%RC_SUBR%%
+
+name="pfspamd"
+rcvar=`set_rcvar`
+
+command="%%PREFIX%%/libexec/spamd"
+start_precmd="pfspamd_precmd"
+start_postcmd="pfspamd_postcmd"
+restart_postcmd="pfspamd_postcmd"
+pidfile="/var/run/spamd.pid"
+
+pfspamd_precmd()
+{
+	_rc=0
+	echo "${pfspamd_flags}" | grep "\-b" 2>&1 > /dev/null
+	if [ $? -eq 1 ]; then
+		/sbin/mount -p | grep 'fdescfs.*/dev/fd.*fdescfs.*rw' 2>&1 > /dev/null
+		_rc=${?}
+		if [ ${_rc} -ne 0 ]; then
+			echo "Unable to start spamd in greylisting mode"
+			echo ""
+			echo "Please mount fdescfs with the following line in /etc/fstab"
+			echo ""
+			echo "  fdescfs /dev/fd fdescfs rw 0 0"
+			echo ""
+		fi
+		return ${_rc}
+	fi
+}
+
+pfspamd_postcmd()
+{
+	if [ -x %%PREFIX%%/sbin/spamd-setup ]; then
+		if [ -r %%PREFIX%%/etc/spamd/spamd.conf ]; then
+			%%PREFIX%%/sbin/spamd-setup &
+		fi
+	fi
+}
+
+load_rc_config $name
+run_rc_command "$1"
