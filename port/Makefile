@@ -23,7 +23,7 @@ BROKEN=		"OpenBSD 3.5 pf/pfctl is necessary for this port to function properly."
 LOCAL_PFCTL=	/sbin/pfctl
 .endif
 
-USE_RC_SUBR?=	pfspamd pfspamlogd
+USE_RC_SUBR?=	obspamd obspamlogd
 
 SPAMDUSER?=	_spamd
 SPAMDGROUP?=	_spamd

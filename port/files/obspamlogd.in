@@ -3,33 +3,33 @@
 # $FreeBSD$
 #
 
-# PROVIDE: pfspamlogd
-# REQUIRE: NETWORKING SERVERS pfspamd
+# PROVIDE: obspamlogd
+# REQUIRE: NETWORKING SERVERS obspamd
 # BEFORE:  DAEMON
 # KEYWORD: shutdown
 
 #
-# Define these pfspamlogd_* variables in one of these files:
+# Define these obspamlogd_* variables in one of these files:
 #       /etc/rc.conf
 #       /etc/rc.conf.local
 #
-# pfspamlogd_enable="YES"	# Run the spamlogd(8) daemon (YES/NO).
-# pfspamlogd_flags=""		# Extra flags for spamlogd(8) (if enabled).
+# obspamlogd_enable="YES"	# Run the spamlogd(8) daemon (YES/NO).
+# obspamlogd_flags=""		# Extra flags for spamlogd(8) (if enabled).
 #
 # DO NOT CHANGE THESE DEFAULT VALUES HERE
 #
-pfspamlogd_enable=${pfspamlogd_enable:-"NO"}
-pfspamlogd_flags=${pfspamlogd_flags:-""}
+obspamlogd_enable=${obspamlogd_enable:-"NO"}
+obspamlogd_flags=${obspamlogd_flags:-""}
 
 . %%RC_SUBR%%
 
-name="pfspamlogd"
+name="obspamlogd"
 rcvar=`set_rcvar`
 
 command="%%PREFIX%%/libexec/spamlogd"
 start_precmd="${name}_precmd"
 
-pfspamlogd_precmd()
+obspamlogd_precmd()
 {
 	_rc=0
 	/sbin/mount -p | grep 'fdescfs.*/dev/fd.*fdescfs.*rw' 2>&1 > /dev/null
