@@ -51,9 +51,7 @@ PLIST_SUB=	SPAMDDIR=${SPAMDDIR} \
 
 SUB_FILES=	pkg-install \
 		pkg-deinstall \
-		pkg-message \
-		pfspamlogd \
-		pfspamd
+		pkg-message 
 
 SUB_LIST=	PREFIX=${PREFIX} \
 		${PLIST_SUB}
