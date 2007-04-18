@@ -41,6 +41,22 @@ yesno() {
    done
 }
 
+check_db() {
+    DB=/var/db/spamd
+    if [ -f ${DB} ]; then
+	OWN=`ls -l ${DB} | awk '{print $3}'`
+	GRP=`ls -l ${DB} | awk '{print $4}'`
+    fi
+    if [ "x${OWN}" != "x${SPAMDUSER}" ]; then
+	echo "change ${BD} owner to ${SPAMDUSER}:"
+	/usr/sbin/chown ${SPAMDUSER} ${DB}
+    fi
+    if [ "x${GRP}" != "x${SPAMDGROUP}" ]; then
+	echo "change ${BD} owner to :${SPAMDUSER}"
+	/usr/sbin/chown :${SPAMDGROUP} ${DB}
+    fi
+}
+
 check_service() {
     local name number type comment
     
@@ -83,6 +99,7 @@ check_service() {
 
 
 if [ "$2" = "PRE-INSTALL" ]; then
+  check_dbown=0	
   if /usr/sbin/pw group show "${SPAMDGROUP}" 2>&1 >/dev/null; then
     echo "You already have a \"${SPAMDGROUP}\" group, so I will use it."
   else
@@ -91,6 +108,7 @@ if [ "$2" = "PRE-INSTALL" ]; then
       /usr/sbin/pw groupadd "${SPAMDGROUP}" -g "${SPAMDGID}" -h - || \
         /usr/sbin/pw groupadd "${SPAMDGROUP}" -h - || exit
       echo "Done."
+      check_dbown=1
     else
       echo "Please create the \"${SPAMDGROUP}\" group manually and try again."
       exit 1
@@ -106,10 +124,15 @@ if [ "$2" = "PRE-INSTALL" ]; then
         -s /sbin/nologin -c "spamd pseudo-user" || \
         /usr/sbin/pw useradd "${SPAMDUSER}" -g "${SPAMDGROUP}" -h - -d "${SPAMDDIR}" \
         -s /sbin/nologin -c "spamd pseudo-user" || exit
+      check_dbown=1
     else
       echo "Please create the \"${SPAMDUSER}\" user manually and try again."
       exit 1
     fi
+  fi
+
+  if [ ${check_dbown} -eq 1 ]; then
+    check_db
   fi
 
   if ! check_service spamd 8025 tcp "spamd(8)"; then
