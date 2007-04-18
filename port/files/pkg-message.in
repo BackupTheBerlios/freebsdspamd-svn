@@ -2,7 +2,8 @@
 To enable spamd you need:
 
 1) Enable spamd in /etc/rc.conf with the following line:
-   pfspamd_enable="YES"
+   obspamd_enable="YES"
+   obspamlogd_enable="YES"
 
 2) Configuration template is available in %%PREFIX%%/etc/spamd as
    spamd.conf.sample file.  Copy then to spamd.conf file and
@@ -11,6 +12,13 @@ To enable spamd you need:
 3) mount fdescfs to /dev/fd with the following line in /etc/fstab
 	fdescfs  	/dev/fd  	fdescfs rw 	0 	0
 
+4) Add following lines to the pf.conf(5)
+
+  table <spamd-white> persist
+  no rdr inet proto tcp from <spamd-white> to any \
+      port smtp
+  rdr pass inet proto tcp from any to any \
+      port smtp -> 127.0.0.1 port spamd
 
  !!!!!!!!!!!! --  I M P O T A N T  -  N O T E S  -- !!!!!!!!!!!!!!!!!
  !
@@ -25,6 +33,8 @@ To enable spamd you need:
  !    if you have scripts that use spamdb review this scripts
  !  - config files: new location is %%PREFIX%%/etc/spamd
  !  - spamtrapp addresses: remove the surrounding '< >' signs
+ !  - pfspamd.sh was renamed to the obspamd
+ !  - IPFW support (beta) added to the sources
  !
  !!!!!!!!!!!! --  I M P O T A N T  -  N O T E S  -- !!!!!!!!!!!!!!!!!
 
