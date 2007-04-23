@@ -30,6 +30,7 @@ command="%%PREFIX%%/libexec/spamd"
 start_precmd="obspamd_precmd"
 start_postcmd="obspamd_postcmd"
 restart_postcmd="obspamd_postcmd"
+stop_postcmd="obspamd_cleanup"
 pidfile="/var/run/spamd.pid"
 
 obspamd_precmd()
@@ -58,6 +59,11 @@ obspamd_postcmd()
 			%%PREFIX%%/sbin/spamd-setup &
 		fi
 	fi
+}
+
+obspamd_cleanup()
+{
+	/bin/rm -f ${pidfile}
 }
 
 load_rc_config $name
