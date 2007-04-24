@@ -1140,8 +1140,8 @@ main(int argc, char *argv[])
 				errx(1, "-h arg too long");
 			break;
 		case 's':
-			i = atoi(optarg);
-			if (i < 0 || i > 10)
+			i = strtonum(optarg, 0, 10, &errstr);
+			if (errstr)
 				usage();
 			stutter = i;
 			break;
