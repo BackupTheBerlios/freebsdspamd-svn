@@ -403,10 +403,10 @@ readsuffixlists(void)
 		while ((buf = fgetln(fp, &len))) {
 #ifdef __FreeBSD__
 			/* strip white space-characters */
-			while (isspace(buf[len-1]) && len >= 1)
+			while (len > 0 && isspace(buf[len-1]))
 				len--;
-			while (isspace(*buf) && len >= 1) {
-				*buf++;
+			while (len > 0 && isspace(*buf)) {
+				buf++;
 				len--;
 			}
 			/* jump over comments and blank lines */
