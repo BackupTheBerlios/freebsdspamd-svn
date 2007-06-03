@@ -34,7 +34,8 @@ To enable spamd you need:
  !  - config files: new location is %%PREFIX%%/etc/spamd
  !  - spamtrapp addresses: remove the surrounding '< >' signs
  !  - pfspamd.sh was renamed to the obspamd
- !  - IPFW support (beta) added to the sources
+ !  - IPFW support (beta) added to the sources.
+ !    See %%PREFIX%%/%%DOCSDIR%%/spamd-ipfw.txt for usage manual.
  !
  !!!!!!!!!!!! --  I M P O T A N T  -  N O T E S  -- !!!!!!!!!!!!!!!!!
 

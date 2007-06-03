@@ -6,7 +6,7 @@
 #
 
 PORTNAME=	spamd
-PORTVERSION=	4.1.0
+PORTVERSION=	4.1.1
 CATEGORIES=	mail
 MASTER_SITES=	BERLIOS
 MASTER_SITE_SUBDIR=freebsdspamd
@@ -18,7 +18,7 @@ COMMENT=	Traps spammers with a very slow smtp-login and return 4xx error
 .include <bsd.port.pre.mk>
 
 .if ${OSVERSION} < 502117
-BROKEN=		"OpenBSD 3.5 pf/pfctl is necessary for this port to function properly."
+BROKEN=		OpenBSD 3.5 pf/pfctl is necessary for this port to function properly.
 .else
 LOCAL_PFCTL=	/sbin/pfctl
 .endif
@@ -34,6 +34,7 @@ SPAMDGID=	${SPAMDUID}
 
 MAN5=		spamd.conf.5
 MAN8=		spamd.8 spamd-setup.8 spamdb.8 spamlogd.8
+PORTDOCS=	ipfw-spamd.txt
 
 PLIST_DIRS=	etc/spamd
 PLIST_FILES=	libexec/spamd libexec/spamlogd \
@@ -51,7 +52,7 @@ PLIST_SUB=	SPAMDDIR=${SPAMDDIR} \
 
 SUB_FILES=	pkg-install \
 		pkg-deinstall \
-		pkg-message 
+		pkg-message
 
 SUB_LIST=	PREFIX=${PREFIX} \
 		${PLIST_SUB}
@@ -81,5 +82,9 @@ do-install:
 		${INSTALL_DATA} -v -p ${WRKSRC}/etc/spamd.conf  \
 		${SAMPLE_SPAMD_CONF};                           \
 	fi
+.if !defined(NOPORTDOCS)
+	@${MKDIR} ${DOCSDIR}
+	@${INSTALL_DATA} ${WRKSRC}/doc/ipfw-spamd.txt ${DOCSDIR}/
+.endif
 
 .include <bsd.port.post.mk>
