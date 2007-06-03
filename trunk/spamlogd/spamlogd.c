@@ -138,7 +138,7 @@ init_pcap(void)
 		return (-1);
 	}
 
-	if (pcap_datalink(hpcap) != DLT_PFLOG) {
+	if ((use_pf && pcap_datalink(hpcap) != DLT_PFLOG) || (!use_pf && pcap_datalink(hpcap)!=DLT_NULL)) {
 		logmsg(LOG_ERR, "Invalid datalink type");
 		pcap_close(hpcap);
 		hpcap = NULL;
@@ -176,38 +176,51 @@ logpkt_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 	const struct ip		*ip = NULL;
 	const struct pfloghdr	*hdr;
 	char			 ipstraddr[40] = { '\0' };
+	uint8_t link_offset;
 
-	hdr = (const struct pfloghdr *)sp;
-	if (hdr->length < MIN_PFLOG_HDRLEN) {
-		logmsg(LOG_WARNING, "invalid pflog header length (%u/%u). "
-		    "packet dropped.", hdr->length, MIN_PFLOG_HDRLEN);
-		return;
+	if(use_pf){
+		hdr = (const struct pfloghdr *)sp;
+		if (hdr->length < MIN_PFLOG_HDRLEN) {
+			logmsg(LOG_WARNING, "invalid pflog header length (%u/%u). "
+			"packet dropped.", hdr->length, MIN_PFLOG_HDRLEN);
+			return;
+		}
+		
+		hdrlen = BPF_WORDALIGN(hdr->length);
+		
+		if (caplen < hdrlen) {
+			logmsg(LOG_WARNING, "pflog header larger than caplen (%u/%u). "
+			"packet dropped.", hdrlen, caplen);
+			return;
+		}
+		
+		/* We're interested in passed packets */
+		if (hdr->action != PF_PASS)
+			return;
+		
+		af = hdr->af;
+		if (af == AF_INET) {
+			ip = (const struct ip *)(sp + hdrlen);
+			if (hdr->dir == PF_IN)
+				inet_ntop(af, &ip->ip_src, ipstraddr,
+			sizeof(ipstraddr));
+			else if (hdr->dir == PF_OUT && !flag_inbound)
+				inet_ntop(af, &ip->ip_dst, ipstraddr,
+			sizeof(ipstraddr));
+		}
 	}
-	hdrlen = BPF_WORDALIGN(hdr->length);
-
-	if (caplen < hdrlen) {
-		logmsg(LOG_WARNING, "pflog header larger than caplen (%u/%u). "
-		    "packet dropped.", hdrlen, caplen);
-		return;
-	}
-
-	/* We're interested in passed packets */
-	if (hdr->action != PF_PASS)
-		return;
-
-	af = hdr->af;
-	if (af == AF_INET) {
-		ip = (const struct ip *)(sp + hdrlen);
-		if (hdr->dir == PF_IN)
-			inet_ntop(af, &ip->ip_src, ipstraddr,
-			    sizeof(ipstraddr));
-		else if (hdr->dir == PF_OUT && !flag_inbound)
-			inet_ntop(af, &ip->ip_dst, ipstraddr,
-			    sizeof(ipstraddr));
+	else { /* IPFW code */
+		link_offset = 4; /* LOOPHDR_SIZE */
+		struct ip      *ip4_pkt = (struct ip *)    (sp + link_offset);
+		if(ip4_pkt->ip_v!=4){
+			logmsg(LOG_WARNING, "Incorrect IP version: %d", ip4_pkt->ip_v);
+			return;
+		}
+		inet_ntop(AF_INET, (const void *)&ip4_pkt->ip_src, ipstraddr, sizeof(ipstraddr));
 	}
 
 	if (ipstraddr[0] != '\0') {
-		if (hdr->dir == PF_IN)
+		if (!use_pf || hdr->dir == PF_IN)
 			logmsg(LOG_DEBUG,"inbound %s", ipstraddr);
 		else 
 			logmsg(LOG_DEBUG,"outbound %s", ipstraddr);
