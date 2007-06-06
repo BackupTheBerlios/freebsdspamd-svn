@@ -41,6 +41,7 @@
 #include <netdb.h>
 
 #ifdef __FreeBSD__
+#include <sys/queue.h> 
 #include <netinet/ip_fw.h>
 #endif
 

@@ -47,6 +47,7 @@
 int 		  use_pf = 1;
 int 		  ipfw_tabno = 2;
 #include <net/if.h>
+#include <sys/queue.h> 
 #include <netinet/ip_fw.h>
 #endif
 
