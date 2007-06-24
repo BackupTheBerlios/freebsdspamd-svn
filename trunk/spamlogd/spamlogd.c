@@ -158,10 +158,12 @@ init_pcap(void)
 
 	pcap_freecode(&bpfp);
 
+#ifdef BIOCLOCK
 	if (ioctl(pcap_fileno(hpcap), BIOCLOCK) < 0) {
 		logmsg(LOG_ERR, "BIOCLOCK: %s", strerror(errno));
 		return (-1);
 	}
+#endif
 
 	return (0);
 }
