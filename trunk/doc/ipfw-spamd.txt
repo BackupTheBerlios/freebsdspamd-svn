@@ -1,7 +1,7 @@
 Using spamd with IPFW.
 ---------------------
 
-FreeBSD port of the OpenBSD spamd is desgigned to work with IPFW or PF
+FreeBSD port of the OpenBSD spamd is designed to work with IPFW or PF
 firewalls. This howto is related to the IPFW spamd mode.
 
 1) To install spamd you need to compile yourkernel with the
@@ -10,14 +10,14 @@ firewalls. This howto is related to the IPFW spamd mode.
 
 2) You will need to add rules to your firewall configuration script.
    E.g.:
-        # bsd spamd rules set. Use table 1 and 2 fow white and black listing
+        # bsd spamd rules set. Use table 1 and 2 for white and black listing
         ${fwcmd} add fwd 127.0.0.1,8025 tcp from table\(2\) to me 25 in
         ${fwcmd} add allow tcp from table\(1\) to me 25 in
         ${fwcmd} add fwd 127.0.0.1,8025 tcp from any to me 25 in
 
 4) Then add to rc.conf lines like:
-       spamd_enable="yes"
-       spamd_flags="-m ipfw"
+       obspamd_enable="yes"
+       obspamd_flags="-m ipfw"
 
 see spamd(8) manual for additional keys. Also you need to use "-m ipfw" with
 spamd-setup and spamlogd utility. If you want to change default IPFW table 
@@ -41,8 +41,8 @@ number - use '-t' option.
      # ngctl mkpeer ipfw: iface 555 inet
      # ifconfig ng0 up
 5.5) Add to rc.conf line like:
-     spamlogd_enable="YES"
-     spamlogd_flags="-m ipfw -l ng0"
+     obspamlogd_enable="YES"
+     obspamlogd_flags="-m ipfw -l ng0"
 5.6) Make startup script for the step 5.1-5.4 and add it to your startup 
      commands.
 
@@ -50,5 +50,5 @@ KNOWN BUGS AND LIMITATIONS
 * You need to create netgraph interface to catch tee packets. I plane to add
   direct divert support in the next versions of the spamlogd daemon.
 * IPFW child of the spamd is running with superuser permissions. This is
-  because only supreruser can change IPFW tables, and i dont think that this
+  because only superuser can change IPFW tables, and i don't think that this
   is a real problem.
