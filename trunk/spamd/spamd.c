@@ -1146,11 +1146,6 @@ main(int argc, char *argv[])
 			stutter = i;
 			break;
 		case 'S':
-			/* 
-			 * strtonum is aviable with FreeBSD 6.1,
-			 * for older versions we have to fallback
-			 */
-
 			i = strtonum(optarg, 0, 90, &errstr);
 			if (errstr)
 				usage();
