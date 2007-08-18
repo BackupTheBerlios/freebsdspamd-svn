@@ -1,12 +1,12 @@
 # New ports collection makefile for:    spamd
 # Date created:         04 April 2007
-# Whom:			Max Laier <max@love2party.net>
+# Whom:			Alex <samm@os2.kiev.ua>
 #
 # $FreeBSD$
 #
 
 PORTNAME=	spamd
-PORTVERSION=	4.1.1
+PORTVERSION=	4.1.2
 CATEGORIES=	mail
 MASTER_SITES=	BERLIOS
 MASTER_SITE_SUBDIR=freebsdspamd
