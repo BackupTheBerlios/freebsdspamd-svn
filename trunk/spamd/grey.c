@@ -1,4 +1,4 @@
-/*	$OpenBSD: grey.c,v 1.39 2007/03/18 18:38:57 beck Exp $	*/
+/*	$OpenBSD: grey.c,v 1.40 2007/08/16 04:42:16 ray Exp $	*/
 
 /*
  * Copyright (c) 2004-2006 Bob Beck.  All rights reserved.
@@ -41,7 +41,7 @@
 #include <netdb.h>
 
 #ifdef __FreeBSD__
-#include <sys/queue.h> 
+#include <sys/queue.h>
 #include <netinet/ip_fw.h>
 #endif
 
@@ -136,18 +136,19 @@ sig_term_chld(int sig)
  * to collapse cidr ranges since these are only ever single
  * host hits.
  */
-int
-configure_spamd(char **addrs, int count, FILE *sdc)
+void
+configure_spamd(char **addrs, size_t count, FILE *sdc)
 {
-	int i;
+	size_t i;
 
+	if (count == 0)
+		return;
 	fprintf(sdc, "%s;%s;", traplist_name, traplist_msg);
 	for (i = 0; i < count; i++)
 		fprintf(sdc, "%s/32;", addrs[i]);
 	fprintf(sdc, "\n");
 	if (fflush(sdc) == EOF)
 		syslog_r(LOG_DEBUG, &sdata, "configure_spamd: fflush failed (%m)");
-	return(0);
 }
 
 
@@ -725,10 +726,13 @@ greyscan(char *dbname)
 	(void) do_changes(db);
 	db->close(db);
 	db = NULL;
-	if(use_pf) configure_pf(whitelist, whitecount);
-	else configure_ipfw(whitelist, whitecount);
-	if (configure_spamd(traplist, trapcount, trapcfg) == -1)
-		syslog_r(LOG_DEBUG, &sdata, "configure_spamd failed");
+
+	if(use_pf)
+		configure_pf(whitelist, whitecount);
+	else
+		configure_ipfw(whitelist, whitecount);
+
+	configure_spamd(traplist, trapcount, trapcfg);
 
 	freeaddrlists();
 	free(a);
@@ -1243,7 +1247,8 @@ check_spamd_db(void)
 			db->sync(db, 0);
 			db->close(db);
 			
-			if(use_pf) drop_privs();
+			if(use_pf)
+				drop_privs();
 			
 			return;
 			break;
@@ -1253,7 +1258,8 @@ check_spamd_db(void)
 			 * convert.
 			 */
 			convert_spamd_db();
-			if(use_pf) drop_privs();
+			if(use_pf)
+				drop_privs();
 			return;
 			break;
 		default:
@@ -1264,7 +1270,8 @@ check_spamd_db(void)
 	}
 	db->sync(db, 0);
 	db->close(db);
-	if(use_pf) drop_privs(); 
+	if(use_pf)
+		drop_privs();
 }
 
 
@@ -1286,9 +1293,9 @@ greywatcher(void)
 		 * child, talks to jailed spamd over greypipe,
 		 * updates db. has no access to pf.
 		 */
-		if(use_pf) 
+		if(use_pf)
 			close(pfdev);
-		else 
+		else
 			drop_privs();
 		setproctitle("(%s update)", PATH_SPAMD_DB);
 		greyreader();
@@ -1311,8 +1318,10 @@ greywatcher(void)
 	sigaction(SIGCHLD, &sa, NULL);
 	sigaction(SIGINT, &sa, NULL);
 
-	if(use_pf) setproctitle("(pf <spamd-white> update)");
-	else setproctitle("(ipfw table %d update)",ipfw_tabno);
+	if(use_pf)
+		setproctitle("(pf <spamd-white> update)");
+	else
+		setproctitle("(ipfw table %d update)",ipfw_tabno);
 	greyscanner();
 	/* NOTREACHED */
 	exit(1);
