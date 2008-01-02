@@ -26,6 +26,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef __FreeBSD__
+#include <syslog.h>
+#endif
 #include <time.h>
 #include <netdb.h>
 #include <ctype.h>
@@ -33,14 +36,38 @@
 #include <unistd.h>
 
 #include "grey.h"
+#ifdef __FreeBSD__
+#include "sync.h"
+#endif
 
 /* things we may add/delete from the db */
 #define WHITE 0
 #define TRAPHIT 1
 #define SPAMTRAP 2
 
+#ifdef __OpenBSD__
+struct syslog_data	 sdata	= SYSLOG_DATA_INIT;
+#else
+#define	syslog_r(l, s, args...)	syslog(l,args)
+#define	openlog_r(i, l, f, s)	openlog(i, l, f)
+#define	closelog_r(l)	        closelog()
+int sdata = 0;					/* dummy */
+#endif
+
 int	dblist(DB *);
 int	dbupdate(DB *, char *, int, int);
+
+#ifdef __FreeBSD__
+/* things we need for sync */
+void 	check_opt_sequence(char **, int);
+
+u_short sync_port;
+int syncrecv;
+int syncsend;
+int debug = 0;
+int greylist = 1;
+FILE *grey = NULL;
+#endif
 
 int
 dbupdate(DB *db, char *ip, int add, int type)
@@ -82,6 +109,23 @@ dbupdate(DB *db, char *ip, int add, int type)
 			goto bad;
 		}
 	} else {
+#ifdef __FreeBSD__
+		/* sync the entry to all peers */
+		if (syncsend) {
+			switch (type) {
+			case WHITE:
+				sync_white(now, now + WHITEEXP, ip);
+				syslog_r(LOG_INFO, &sdata, "send white %s", ip);
+				break;
+			case TRAPHIT:
+				sync_trapped(now, now + TRAPEXP, ip);
+				syslog_r(LOG_INFO, &sdata, "send trapped %s", ip);
+				break;
+			default:
+				break;
+			}
+		}
+#endif
 		/* add or update entry */
 		r = db->get(db, &dbk, &dbd, 0);
 		if (r == -1) {
@@ -259,10 +303,34 @@ extern char *__progname;
 static int
 usage(void)
 {
+#ifdef __FreeBSD__
+	fprintf(stderr, 
+		"usage: %s [-D] [-Y synctarget] [[-Tt] -a keys] [[-Tt] -d keys]\n",
+		__progname);
+#else		
 	fprintf(stderr, "usage: %s [[-Tt] -a keys] [[-Tt] -d keys]\n", __progname);
+#endif	
 	exit(1);
 	/* NOTREACHED */
 }
+
+#ifdef __FreeBSD__
+/* check if parameters -D or -Y applied after -t or -ta parameter */
+void
+check_opt_sequence(char **argv, int argc)
+{
+	int i; 
+	for (i=0; i<argc; i++)
+		if (argv[i][0] != '\0') {
+			if (argv[i][1] == 'Y' || argv[i][1] == 'D') {
+				fprintf(stderr, 
+					"\n%s: wrong opt sequence detected !\n",
+					__progname);
+				usage();
+			}
+		}
+}
+#endif
 
 int
 main(int argc, char **argv)
@@ -271,8 +339,30 @@ main(int argc, char **argv)
 	HASHINFO	hashinfo;
 	DB		*db;
 
+#ifdef __FreeBSD__
+	int syncfd = 0;
+	struct servent *ent;
+	char *sync_iface = NULL;
+	char *sync_baddr = NULL;
+
+	if ((ent = getservbyname("spamd-sync", "udp")) == NULL)
+		errx(1, "Can't find service \"spamd-sync\" in /etc/services");
+	sync_port = ntohs(ent->s_port);
+
+	while ((ch = getopt(argc, argv, "DY:adtT")) != -1) {
+		switch (ch) {
+		case 'D':
+			debug = 1;
+			break;
+		case 'Y':
+			if (sync_addhost(optarg, sync_port) != 0)
+				sync_iface = optarg;
+			syncsend++;
+			break;
+#else			
 	while ((ch = getopt(argc, argv, "adtT")) != -1) {
 		switch (ch) {
+#endif	
 		case 'a':
 			action = 1;
 			break;
@@ -300,18 +390,32 @@ main(int argc, char **argv)
 	    0600, DB_HASH, &hashinfo);
 	if (db == NULL) {
 		if (errno == EFTYPE)	
-			err(1,
-			    "%s is old, run current spamd to convert it",
+			err(1, "%s is old, run current spamd to convert it",
 			    PATH_SPAMD_DB);
 		else 
 			err(1, "cannot open %s for %s", PATH_SPAMD_DB,
 			    action ? "writing" : "reading");
 	}
 
+#ifdef __FreeBSD__
+	/* sync only WHITE and TRAPHIT */
+	if (action != 1 || type == SPAMTRAP)
+		syncsend = 0;
+	if (syncsend) {
+		openlog_r("spamdb", LOG_NDELAY, LOG_DAEMON, &sdata);
+		syncfd = sync_init(sync_iface, sync_baddr, sync_port);
+		if (syncfd == -1)
+			err(1, "sync init");
+	}
+#endif	
+
 	switch (action) {
 	case 0:
 		return dblist(db);
 	case 1:
+#ifdef __FreeBSD__
+		check_opt_sequence(argv, argc); 
+#endif		
 		for (i=0; i<argc; i++)
 			if (argv[i][0] != '\0') {
 				c++;
@@ -321,6 +425,9 @@ main(int argc, char **argv)
 			errx(2, "no addresses specified");
 		break;
 	case 2:
+#ifdef __FreeBSD__
+		check_opt_sequence(argv, argc); 
+#endif		
 		for (i=0; i<argc; i++)
 			if (argv[i][0] != '\0') {
 				c++;
@@ -332,6 +439,10 @@ main(int argc, char **argv)
 	default:
 		errx(-1, "bad action");
 	}
+#ifdef __FreeBSD__
+	if (syncsend)
+		closelog_r(&sdata);
+#endif	
 	db->close(db);
 	return (r);
 }

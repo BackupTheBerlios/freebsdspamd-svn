@@ -1,9 +1,15 @@
 #	$OpenBSD: Makefile,v 1.3 2005/05/24 22:23:05 millert Exp $
 
 PROG=	spamdb
-SRCS=	spamdb.c
+SRCS=	spamdb.c sync.c
 MAN=	spamdb.8
 
+.include "${.CURDIR}/../osver.mk"
+
 CFLAGS+= -Wall -Wstrict-prototypes -I${.CURDIR}/../spamd
+
+LDADD+= -lcrypto -lmd
+DPADD+= ${LIBCRYPTO} ${LIBMD}
+.PATH:  ${.CURDIR}/../spamd
 
 .include <bsd.prog.mk>

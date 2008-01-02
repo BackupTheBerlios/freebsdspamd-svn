@@ -1,4 +1,4 @@
-.\"	$OpenBSD: spamdb.8,v 1.14 2007/04/04 13:45:14 jmc Exp $
+.\"	$OpenBSD: spamdb.8,v 1.15 2007/05/31 19:20:29 jmc Exp $
 .\"
 .\" Copyright (c) 2004 Bob Beck.  All rights reserved.
 .\"
@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd February 16, 2004
+.Dd September 11, 2007
 .Dt SPAMDB 8
 .Os
 .Sh NAME
@@ -22,6 +22,8 @@
 .Nd spamd database tool
 .Sh SYNOPSIS
 .Nm spamdb
+.Oo Fl D Oc
+.Op Fl Y Ar synctarget
 .Oo Oo Fl Tt Oc
 .Fl a Ar keys Oc
 .Oo Oo Fl Tt Oc
@@ -35,6 +37,21 @@ used for
 .Pp
 The options are as follows:
 .Bl -tag -width Ds
+.It Fl D
+debug mode
+.It Fl Y Ar synctarget
+Add target
+.Ar synctarget
+to receive synchronisation messages.
+.Ar synctarget
+can be either an IPv4 address for unicast messages
+or a network interface and optional TTL value for multicast messages
+to the group 224.0.1.240.
+If the multicast TTL is not specified, a default value of 1 is used.
+This option can be specified multiple times.
+See also
+.Sx SYNCHRONISATION
+below.
 .It Fl a Ar keys
 Add or update the entries for
 .Ar keys .
@@ -170,12 +187,63 @@ Note that times are in seconds since the Epoch, in the manner returned by
 Times may be converted to human readable format using:
 .Pp
 .Dl $ date -r <value>
+.Pp
+.Sh SYNCHRONISATION
+.Nm
+supports realtime synchronisation of white or blacklist states between
+a number of
+.Em spamd
+daemons running on multiple machines,
+using the
+.Fl Y
+option.
+.Pp
+The following example will send a unicast synchronisation messages.
+.Bd -literal -offset indent
+.Em whitelisting
+# /usr/local/sbin/spamdb -Y foo.example.org -a 1.2.3.4 2.3.4.5
+# /usr/local/sbin/spamdb -Y foo.example.org -Y bar.example.org -a 1.2.3.4
+.Pp
+.Em blacklisting
+# /usr/local/sbin/spamdb -Y foo.example.org -ta 1.2.3.4 2.3.4.5
+.Ed
+.Pp
+If the file
+.Pa /usr/local/etc/spamd/spamd.key
+exists,
+.Nm
+will calculate the message-digest fingerprint (checksum) for the file
+and use it as a shared key to authenticate the synchronisation messages.
+The file itself can contain any data.
+For example, to create a secure random key:
+.Bd -literal -offset indent
+# dd if=/dev/random of=/usr/local/etc/spamd/spamd.key bs=2048 count=1
+.Ed
+.Pp
+The IP send to peers is logged via
+.Xr syslogd 8
+at
+.Dv LOG_INFO
+level.
+The following
+.Xr syslog.conf 5
+section can be used to log connection details to a dedicated file:
+.Bd -literal -offset indent
+!spamdb
+daemon.info			/var/log/spamdb
+.Ed
+.Pp
+The file needs to be copied to all hosts
+sending or receiving synchronisation messages.
 .Sh FILES
 /var/db/spamd
+.Pp
+/usr/local/etc/spamd/spamd.key
 .Sh SEE ALSO
 .Xr spamd.conf 5 ,
 .Xr spamd 8 ,
-.Xr spamd-setup 8
+.Xr spamd-setup 8 ,
+.Xr spamlogd 8
 .Sh HISTORY
 The
 .Nm
