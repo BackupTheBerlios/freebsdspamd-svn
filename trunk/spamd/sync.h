@@ -1,4 +1,4 @@
-/*	$OpenBSD: sync.h,v 1.1 2007/03/04 03:19:41 beck Exp $	*/
+/*	$OpenBSD: sync.h,v 1.3 2008/05/22 19:54:11 deraadt Exp $	*/
 
 /*
  * Copyright (c) 2006, 2007 Reyk Floeter <reyk@openbsd.org>
@@ -33,20 +33,23 @@
  * a public SPAM sender database or distribution between vendors.
  */
 
-#define SPAM_SYNC_VERSION	1
+#define SPAM_SYNC_VERSION	2
 #define SPAM_SYNC_MCASTADDR	"224.0.1.240"	/* XXX choose valid address */
 #define SPAM_SYNC_MCASTTTL	IP_DEFAULT_MULTICAST_TTL
 #define SPAM_SYNC_HMAC_LEN	20	/* SHA1 */
 #define SPAM_SYNC_MAXSIZE	1408
 #define SPAM_SYNC_KEY		"/usr/local/etc/spamd/spamd.key"
 
+#define SPAM_ALIGNBYTES      (15)
+#define SPAM_ALIGN(p)        (((u_int)(p) + SPAM_ALIGNBYTES) &~ SPAM_ALIGNBYTES)
+
 struct spam_synchdr {
 	u_int8_t	sh_version;
 	u_int8_t	sh_af;
-	u_int32_t	sh_counter;
 	u_int16_t	sh_length;
+	u_int32_t	sh_counter;
 	u_int8_t	sh_hmac[SPAM_SYNC_HMAC_LEN];
-	u_int16_t	sh_pad[1];
+	u_int8_t	sh_pad[4];
 } __packed;
 
 struct spam_synctlv_hdr {
@@ -62,6 +65,7 @@ struct spam_synctlv_grey {
 	u_int16_t	sg_from_length;
 	u_int16_t	sg_to_length;
 	u_int16_t	sg_helo_length;
+	/* strings go here, then packet code re-aligns packet */
 } __packed;
 
 struct spam_synctlv_addr {

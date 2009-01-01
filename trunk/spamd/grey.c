@@ -378,7 +378,7 @@ dequotetolower(const char *addr)
 	static char buf[MAX_MAIL];
 	char *cp;
 
-	if (*addr == '<');
+	if (*addr == '<')
 		addr++;
 	(void) strlcpy(buf, addr, sizeof(buf));
 	cp = strrchr(buf, '>');
@@ -843,7 +843,7 @@ twupdate(char *dbname, char *what, char *ip, char *source, char *expires)
 			fprintf(stderr, "added %s %s\n",
 			    spamtrap ? "trap entry for" : "", ip);
 		syslog_r(LOG_DEBUG, &sdata,
-		    "New %s from %s for %s, expires %s", what, source, ip,
+		    "new %s from %s for %s, expires %s", what, source, ip,
 		    expires);
 	} else {
 		/* existing entry */
