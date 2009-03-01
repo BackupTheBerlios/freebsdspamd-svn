@@ -1,4 +1,4 @@
-.\"	$OpenBSD: spamd.8,v 1.109 2008/03/28 18:21:55 grunk Exp $
+.\"	$OpenBSD: spamd.8,v 1.112 2009/02/17 22:07:11 jmc Exp $
 .\"
 .\" Copyright (c) 2002 Theo de Raadt.  All rights reserved.
 .\"
@@ -22,7 +22,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.Dd January 8 2008
+.Dd Febuary 17 2009
 .Dt SPAMD 8
 .Os
 .Sh NAME
@@ -238,7 +238,8 @@ below.
 .It Fl m Ar mode
 Firewall type. Can be pf (default) or ipfw.
 .It Fl t Ar table_number
-IPFW table number. Use only with -m ipfw.
+IPFW table number. Use only with 
+.Oo Fl m Ar ipfw Oc .
 .El
 .Pp
 When run in default mode,
@@ -354,6 +355,17 @@ section can be used to log connection details to a dedicated file:
 !spamd
 daemon.err;daemon.warn;daemon.info	/var/log/spamd
 .Ed
+.Pp
+A typical entry shows the time of the connection and
+the IP address of the connecting host.
+When a host connects,
+the total number of active connections and
+the number of connections from blacklisted hosts is shown
+.Pq connected (xx/xx) .
+When a host disconnects,
+the amount of time spent talking to
+.Nm
+is shown.
 .Sh GREYTRAPPING
 When running
 .Nm
@@ -436,8 +448,8 @@ been seen will be trapped.
 Note that it is important to ensure that a host running
 .Nm
 with the low priority MX address active must see all the greylist
-changes for a higher priority MX host for the same domains, either by
-being synchronised with it, or by receiving the connections itself to
+changes for a higher priority MX host for the same domains.
+This is best done by the host itself receiving the connections to
 the higher priority MX on another IP address (which may be an IP alias).
 This will ensure that hosts are not trapped erroneously if the higher
 priority MX is unavailable.
@@ -522,15 +534,16 @@ a connecting address is matched.
 is normally used to configure this information.
 .Sh SYNCHRONISATION
 .Nm
-supports realtime synchronisation of greylisting states between
-a number of
-.Nm
+supports realtime synchronisation of spamd databases between
+a number of spamd
 daemons running on multiple machines,
 using the
 .Fl Y
 and
 .Fl y
 options.
+The databases are synchronised for greylisted and trapped entries;
+whitelisted entries are not updated.
 .Pp
 The following example will accept incoming multicast and unicast
 synchronisation messages, and send outgoing multicast messages through

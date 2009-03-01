@@ -1,4 +1,4 @@
-/*	$OpenBSD: spamd.c,v 1.103 2007/11/03 19:16:07 beck Exp $	*/
+/*	$OpenBSD: spamd.c,v 1.104 2008/07/11 15:05:59 reyk Exp $	*/
 
 /*
  * Copyright (c) 2002-2007 Bob Beck.  All rights reserved.
@@ -23,6 +23,12 @@
 #include <sys/socket.h>
 #include <sys/sysctl.h>
 #include <sys/resource.h>
+
+/* XXX need for lstat check */
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -627,6 +633,7 @@ gethelo(char *p, size_t len, char *f)
 void
 initcon(struct con *cp, int fd, struct sockaddr *sa)
 {
+	socklen_t len = sa->sa_len;
 	time_t tt;
 	char *tmp;
 	int error;
@@ -643,7 +650,7 @@ initcon(struct con *cp, int fd, struct sockaddr *sa)
 	if (grow_obuf(cp, 0) == NULL)
 		err(1, "malloc");
 	cp->fd = fd;
-	if (sa->sa_len > sizeof(cp->ss))
+	if (len > sizeof(cp->ss))
 		errx(1, "sockaddr size");
 	if (sa->sa_family != AF_INET)
 		errx(1, "not supported yet");
@@ -831,11 +838,6 @@ nextstate(struct con *cp)
 				if (greylist && cp->blacklists == NULL) {
 					/* send this info to the greylister */
 					getcaddr(cp);
-					if (debug) /* XXX */
-						fprintf(stderr,
-					    "CO:%s\nHE:%s\nIP:%s\nFR:%s\nTO:%s\n",
-					    cp->caddr, cp->helo, cp->addr,
-					    cp->mail, cp->rcpt);
 					fprintf(grey,
 					    "CO:%s\nHE:%s\nIP:%s\nFR:%s\nTO:%s\n",
 					    cp->caddr, cp->helo, cp->addr,
@@ -1051,7 +1053,9 @@ int
 main(int argc, char *argv[])
 {
 #ifdef __FreeBSD__
+	extern char *__progname;
 	FILE *fpid = NULL;
+	struct stat dbstat;
 #endif	
 	fd_set *fdsr = NULL, *fdsw = NULL;
 	struct sockaddr_in sin;
@@ -1276,6 +1280,14 @@ main(int argc, char *argv[])
 		syslog(LOG_ERR, "exiting (couldn't create pid file %s)", 
 			pid_file);
 		err(1, "couldn't create pid file \"%s\"", pid_file);
+	}
+	/*check if PATH_SPAMD_DB is a regular file */ /* XXX fixme description */
+	if (lstat(PATH_SPAMD_DB, &dbstat) == 0 && !S_ISREG(dbstat.st_mode)) {
+		syslog(LOG_ERR, "exiting (%s exist but is not a regular file)", 
+			PATH_SPAMD_DB);
+		fprintf(stderr, "%s exiting (%s exist but is not a regular file)\n", 
+			__progname, PATH_SPAMD_DB);
+		exit(1);
 	}
 #endif	
 

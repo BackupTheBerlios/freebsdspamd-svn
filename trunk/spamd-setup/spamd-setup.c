@@ -1,4 +1,4 @@
-/*	$OpenBSD: spamd-setup.c,v 1.32 2007/02/27 02:10:58 beck Exp $ */
+/*	$OpenBSD: spamd-setup.c,v 1.35 2008/10/03 18:58:52 jmc Exp $ */
 
 /*
  * Copyright (c) 2003 Bob Beck.  All rights reserved.
@@ -854,9 +854,9 @@ __dead void
 usage(void)
 {
 #ifndef __FreeBSD__ 
-	fprintf(stderr, "usage: %s [-bdn]\n", __progname);
+	fprintf(stderr, "usage: %s [-bDdn]\n", __progname);
 #else	
-	fprintf(stderr, "usage: %s [-bdnmt]\n", __progname);
+	fprintf(stderr, "usage: %s [-bDdnmt]\n", __progname);
 #endif
 	exit(1);
 }
@@ -868,9 +868,9 @@ main(int argc, char *argv[])
 	char **db_array, *buf, *name;
 	struct blacklist *blists;
 	struct servent *ent;
-	int i, ch;
+	int daemonize = 0, i, ch;
 #ifndef __FreeBSD__
-	while ((ch = getopt(argc, argv, "bdn")) != -1) {
+	while ((ch = getopt(argc, argv, "bDdn")) != -1) {
 #else
 	while ((ch = getopt(argc, argv, "bdnm:t:")) != -1) {
 #endif
@@ -894,6 +894,9 @@ main(int argc, char *argv[])
 			break;
 
 #endif
+		case 'D':
+			daemonize = 1;
+			break;
 		default:
 			usage();
 			break;
@@ -903,6 +906,9 @@ main(int argc, char *argv[])
 	argv += optind;
 	if (argc != 0)
 		usage();
+
+	if (daemonize)
+		daemon(0, 0);
 
 	if ((ent = getservbyname("spamd-cfg", "tcp")) == NULL)
 		errx(1, "cannot find service \"spamd-cfg\" in /etc/services");

@@ -1,4 +1,4 @@
-.\"	$OpenBSD: spamd-setup.8,v 1.14 2007/03/08 07:55:05 jmc Exp $
+.\"	$OpenBSD: spamd-setup.8,v 1.19 2009/02/19 17:11:20 jmc Exp $
 .\"
 .\" Copyright (c) 2003 Jason L. Wright (jason@thought.net)
 .\" All rights reserved.
@@ -23,7 +23,7 @@
 .\" STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 .\" POSSIBILITY OF SUCH DAMAGE.
 .\"
-.Dd February 14, 2003
+.Dd Febuary 19, 2009
 .Dt SPAMD-SETUP 8
 .Os
 .Sh NAME
@@ -31,7 +31,7 @@
 .Nd parse and load file of spammer addresses
 .Sh SYNOPSIS
 .Nm spamd-setup
-.Op Fl bdn
+.Op Fl bDdn
 .Sh DESCRIPTION
 The
 .Nm
@@ -43,9 +43,7 @@ blacklist entries.
 When
 .Nm
 is run in blacklist only mode,
-instead of sending blacklist data directly to
-.Xr spamd 8 ,
-it sends it to the
+it also sends blacklist data to the
 .Xr pf 4
 table
 .Aq Ar spamd .
@@ -72,15 +70,23 @@ Use this flag if
 is running with the
 .Fl b
 flag too.
+.It Fl D
+Daemonize;
+run
+.Nm
+in the background.
 .It Fl d
 Debug mode reports a few pieces of information.
 .It Fl n
 Dry-run mode.
 No data is shipped.
-.It Fl m Ar ipfw Oc
+.It Fl m Ar ipfw
 Use IPFW firewall instead of PF
-.It Fl t Ar <table> Oc
-IPFW table number (use only with '-m ipfw'), default: 2
+.It Fl t Ar table_number
+IPFW table number. Use only with 
+.Oo Fl m Ar ipfw
+.Oc
+), default: 2
 .El
 .Pp
 Lists are specified in the configuration file

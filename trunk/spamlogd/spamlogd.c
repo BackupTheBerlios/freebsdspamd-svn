@@ -27,6 +27,9 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 
+#ifdef __FreeBSD__
+#include <sys/stat.h>
+#endif
 #include <net/if.h>
 #include <net/if_var.h>
 #include <net/if_types.h>
@@ -180,8 +183,8 @@ logpkt_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 	char			 ipstraddr[40] = { '\0' };
 	uint8_t link_offset;
 
+	hdr = (const struct pfloghdr *)sp;
 	if(use_pf){
-		hdr = (const struct pfloghdr *)sp;
 		if (hdr->length < MIN_PFLOG_HDRLEN) {
 			logmsg(LOG_WARNING, "invalid pflog header length (%u/%u). "
 			"packet dropped.", hdr->length, MIN_PFLOG_HDRLEN);
@@ -332,6 +335,8 @@ main(int argc, char **argv)
 {
 #ifdef __FreeBSD__
 	FILE		*fpid = NULL;
+	struct		stat dbstat;
+	int		rst;
 #endif	
 	int		 ch;
 	struct passwd	*pw;
@@ -380,6 +385,21 @@ main(int argc, char **argv)
 		}
 	}
 
+#ifdef __FreeBSD__
+	/*check if PATH_SPAMD_DB exist and is a regular file */ /* XXX fixme description */
+	rst = lstat(PATH_SPAMD_DB, &dbstat);
+	if (rst == -1 && errno == ENOENT){
+		syslog(LOG_ERR, "exiting (database %s does not exist)", PATH_SPAMD_DB);
+		err(1, "%s", PATH_SPAMD_DB);
+	}
+	if (rst == 0 && !S_ISREG(dbstat.st_mode)) {
+		syslog(LOG_ERR, "exiting (%s exist but is not a regular file)", 
+			PATH_SPAMD_DB);
+		fprintf(stderr, "%s exiting (%s exist but is not a regular file)\n", 
+			__progname, PATH_SPAMD_DB);
+		exit(1);
+	}
+#endif	
 	signal(SIGINT , sighandler_close);
 	signal(SIGQUIT, sighandler_close);
 	signal(SIGTERM, sighandler_close);

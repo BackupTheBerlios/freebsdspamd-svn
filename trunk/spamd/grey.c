@@ -1,4 +1,4 @@
-/*	$OpenBSD: grey.c,v 1.41 2007/11/03 19:16:07 beck Exp $	*/
+/*	$OpenBSD: grey.c,v 1.46 2009/02/25 19:00:36 beck Exp $	*/
 
 /*
  * Copyright (c) 2004-2006 Bob Beck.  All rights reserved.
@@ -400,8 +400,11 @@ readsuffixlists(void)
 	size_t len;
 	struct mail_addr *m;
 
-	while (!SLIST_EMPTY(&match_suffix))
+	while (!SLIST_EMPTY(&match_suffix)) {
+		m = SLIST_FIRST(&match_suffix);
 		SLIST_REMOVE_HEAD(&match_suffix, entry);
+		free(m);
+	}
 	if ((fp = fopen(alloweddomains_file, "r")) != NULL) {
 		while ((buf = fgetln(fp, &len))) {
 #ifdef __FreeBSD__
@@ -412,10 +415,10 @@ readsuffixlists(void)
 				buf++;
 				len--;
 			}
+			if (len == 0)
+				continue;
 			/* jump over comments and blank lines */
 			if (*buf == '#' || *buf == '\n')
-				continue;
-			if (len == 0)
 				continue;
 #endif
 			if (buf[len-1] == '\n')
@@ -436,8 +439,11 @@ readsuffixlists(void)
 	}
 	return;
 bad:
-	while (!SLIST_EMPTY(&match_suffix))
+	while (!SLIST_EMPTY(&match_suffix)) {
+		m = SLIST_FIRST(&match_suffix);
 		SLIST_REMOVE_HEAD(&match_suffix, entry);
+		free(m);
+	}
 }
 
 void
@@ -611,6 +617,7 @@ do_changes(DB *db)
 		dbc->act = 0;
 		dbc->dsiz = 0;
 		SLIST_REMOVE_HEAD(&db_changes, entry);
+		free(dbc);
 
 	}
 	return(ret);
@@ -800,7 +807,7 @@ twupdate(char *dbname, char *what, char *ip, char *source, char *expires)
 
 	now = time(NULL);
 	/* expiry times have to be in the future */
-	expire = strtonum(expires, now, UINT_MAX, NULL);
+	expire = strtonum(expires, now, INT_MAX, NULL);
 	if (expire == 0)
 		return(-1);
 
@@ -965,6 +972,9 @@ greyupdate(char *dbname, char *helo, char *ip, char *from, char *to, int sync,
 		if (debug)
 			fprintf(stderr, "added %s %s\n",
 			    spamtrap ? "greytrap entry for" : "", lookup);
+		syslog_r(LOG_DEBUG, &sdata,
+		    "new %sentry %s from %s to %s, helo %s",
+		    spamtrap ? "greytrap " : "", ip, from, to, helo);
 	} else {
 		/* existing entry */
 		if (dbd.size != sizeof(gd)) {
@@ -1300,6 +1310,7 @@ greywatcher(void)
 			drop_privs();
 		setproctitle("(%s update)", PATH_SPAMD_DB);
 		greyreader();
+		syslog_r(LOG_ERR, &sdata, "greyreader failed (%m)");
 		/* NOTREACHED */
 		_exit(1);
 	}

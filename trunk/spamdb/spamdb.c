@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef __FreeBSD__
+#include <sys/stat.h>
 #include <syslog.h>
 #endif
 #include <time.h>
@@ -345,6 +346,7 @@ main(int argc, char **argv)
 #ifdef __FreeBSD__
 	int syncfd = 0;
 	struct servent *ent;
+	struct stat dbstat;
 	char *sync_iface = NULL;
 	char *sync_baddr = NULL;
 
@@ -387,6 +389,16 @@ main(int argc, char **argv)
 	argv += optind;
 	if (action == 0 && type != WHITE)
 		usage();
+#ifdef __FreeBSD__
+	/*check if PATH_SPAMD_DB is a regular file */ /* XXX fixme description */
+	if (lstat(PATH_SPAMD_DB, &dbstat) == 0 && !S_ISREG(dbstat.st_mode)) {
+		syslog(LOG_ERR, "exiting (%s exist but is not a regular file)", 
+			PATH_SPAMD_DB);
+		fprintf(stderr, "%s exiting (%s exist but is not a regular file)\n", 
+			__progname, PATH_SPAMD_DB);
+		exit(1);
+	}
+#endif
 	
 	memset(&hashinfo, 0, sizeof(hashinfo));
 	db = dbopen(PATH_SPAMD_DB, O_EXLOCK | (action ? O_RDWR : O_RDONLY),
