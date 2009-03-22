@@ -1,0 +1,44 @@
+#!/bin/sh
+#
+# $FreeBSD$
+#
+
+# PROVIDE: greyscanner
+# REQUIRE: LOGIN spamd
+# KEYWORD: shutdown
+
+#
+# Define these greyscanner_* variables in one of these files:
+#       /etc/rc.conf
+#       /etc/rc.conf.local
+#
+# greyscanner_enable="YES"	# Run the greyscanner daemon (YES/NO).
+#
+# DO NOT CHANGE THESE DEFAULT VALUES HERE
+#
+greyscanner_enable=${greyscanner_enable:-"NO"}
+
+. %%RC_SUBR%%
+
+name="greyscanner"
+rcvar=`set_rcvar`
+
+command="%%PREFIX%%/libexec/${name}"
+command_interpreter="%%PERL%%"
+stop_cmd="greyscanner_stop"
+
+greyscanner_stop()
+{
+	pids=`check_process ${command} ${command_interpreter}`
+	if [ -z "${pids}" ]; then
+		echo "${name} not running?"
+	else
+		echo "Stopping ${name}."
+		kill ${sig_stop} ${pids}
+		wait_for_pids ${pids}
+	fi
+}
+
+load_rc_config $name
+
+run_rc_command "$1"

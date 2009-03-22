@@ -1,0 +1,17 @@
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Do not forget to customise the default values inside the
+%%PREFIX%%/libexec/greyscanner script
+
+to enable greyscanner place the following line in rc.conf
+
+ greyscanner_enable="YES"
+
+to collect stats (for example via RRD) you can use the 
+spamd_rrd script in %%EXAMPLESDIR%% 
+as starting point
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+

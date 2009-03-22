@@ -1,0 +1,3 @@
+Script that runs as daemon to cleanup OpenBSD spamd database.
+
+WWW: http://www.OpenBSD.org/spamd/
