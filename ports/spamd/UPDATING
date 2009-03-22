@@ -1,0 +1,13 @@
+
+  AFFECTS: users of mail/spamd
+  AUTHOR: ohauer@gmx.de
+
+  The sync protocol has changed for versions > 4.1.x
+  If you have spamd installed in distributed environment 
+  with sync enabled stop sync between the nodes until every 
+  node is updated
+  
+  - sync for spamdb is now implemented (parameter -Y)
+  - if you use cPanel build the port with -DCPANEL,
+    spamd will be installed as obspamd and the rc script is obspamd.cpanel
+

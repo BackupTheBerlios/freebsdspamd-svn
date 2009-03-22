@@ -102,6 +102,7 @@ if [ "$2" = "PRE-INSTALL" ]; then
   check_dbown=0	
   if /usr/sbin/pw group show "${SPAMDGROUP}" 2>&1 >/dev/null; then
     echo "You already have a \"${SPAMDGROUP}\" group, so I will use it."
+    check_dbown=1
   else
     echo "You need a \"${SPAMDGROUP}\" group."
     if yesno "Would you like me to create it" "YES"; then
@@ -117,6 +118,7 @@ if [ "$2" = "PRE-INSTALL" ]; then
 
   if /usr/sbin/pw user show "${SPAMDUSER}" 2>&1 >/dev/null; then
     echo "You already have a \"${SPAMDUSER}\" user, so I will use it."
+    check_dbown=1
   else
     echo "You need a \"${SPAMDUSER}\" user."
     if yesno "Would you like me to create it" "YES"; then

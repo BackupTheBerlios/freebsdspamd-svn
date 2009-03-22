@@ -1,12 +1,12 @@
 # New ports collection makefile for:    spamd
 # Date created:         04 April 2007
-# Whom:			Alex <samm@os2.kiev.ua>
+# Whom:			Max Laier <max@love2party.net>
 #
 # $FreeBSD$
 #
 
 PORTNAME=	spamd
-PORTVERSION=	4.1.2
+PORTVERSION=	4.5.0rc1
 CATEGORIES=	mail
 MASTER_SITES=	BERLIOS
 MASTER_SITE_SUBDIR=freebsdspamd
@@ -14,14 +14,6 @@ DISTNAME=	${PORTNAME}-${PORTVERSION}
 
 MAINTAINER=	samm@os2.kiev.ua
 COMMENT=	Traps spammers with a very slow smtp-login and return 4xx error
-
-.include <bsd.port.pre.mk>
-
-.if ${OSVERSION} < 502117
-BROKEN=		OpenBSD 3.5 pf/pfctl is necessary for this port to function properly.
-.else
-LOCAL_PFCTL=	/sbin/pfctl
-.endif
 
 USE_RC_SUBR?=	obspamd obspamlogd
 
@@ -34,11 +26,13 @@ SPAMDGID=	${SPAMDUID}
 
 MAN5=		spamd.conf.5
 MAN8=		spamd.8 spamd-setup.8 spamdb.8 spamlogd.8
-PORTDOCS=	ipfw-spamd.txt
+PORTDOCS=	ipfw-spamd.txt spamdb.txt
 
 PLIST_DIRS=	etc/spamd
-PLIST_FILES=	libexec/spamd libexec/spamlogd \
-		sbin/spamd-setup sbin/spamdb \
+PLIST_FILES=	libexec/spamd \
+		libexec/spamlogd \
+		sbin/spamd-setup \
+		sbin/spamdb \
 		etc/spamd/spamd.conf.sample
 
 CONFIG_DIR=		${PREFIX}/etc/spamd
@@ -56,6 +50,17 @@ SUB_FILES=	pkg-install \
 
 SUB_LIST=	PREFIX=${PREFIX} \
 		${PLIST_SUB}
+
+pre-fetch:
+	@${ECHO} ""
+	@${ECHO} " **** UPGRADE WARNING:  SYNC PROTOCOL CHANGED ****"
+	@${ECHO} " If you have spamd in distributed environment stop"
+	@${ECHO} " sync between old (4.1.x) and new version"
+	@${ECHO} " until every node is updated"
+	@${ECHO} ""
+	@${ECHO} " Hit ^c now and read ${PORTSDIR}/UPDATING section or"
+	@read -p "Hit ^c now to stop, any key to continue: " -t 5 a || true
+	@${ECHO} ""
 
 pre-install:
 	@${SH} ${PKGINSTALL} ${DISTNAME} PRE-INSTALL
@@ -85,6 +90,7 @@ do-install:
 .if !defined(NOPORTDOCS)
 	@${MKDIR} ${DOCSDIR}
 	@${INSTALL_DATA} ${WRKSRC}/doc/ipfw-spamd.txt ${DOCSDIR}/
+	@${INSTALL_DATA} ${WRKSRC}/doc/spamdb.txt ${DOCSDIR}/
 .endif
 
-.include <bsd.port.post.mk>
+.include <bsd.port.mk>
