@@ -1,4 +1,4 @@
-#!%%PERL%%
+#!/usr/bin/perl
 
 # Greytrapping daemon for OpenBSD spamd
 
