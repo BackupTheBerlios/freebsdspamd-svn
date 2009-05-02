@@ -137,7 +137,7 @@ u_short sync_port;
 
 extern struct sdlist *blacklists;
 extern int pfdev;
-extern char *low_prio_mx_ip; 
+extern char *low_prio_mx_ip;
 
 int conffd = -1;
 int trapfd = -1;
@@ -583,7 +583,7 @@ setlog(char *p, size_t len, char *f)
 		*s = '\0';
 }
 
-/* 
+/*
  * Get address client connected to, by doing a DIOCNATLOOK call.
  * Uses server_lookup code from ftp-proxy.
  */
@@ -603,7 +603,7 @@ getcaddr(struct con *cp) {
 		return;
 	error = getnameinfo(odp, odp->sa_len, cp->caddr, sizeof(cp->caddr),
 	    NULL, 0, NI_NUMERICHOST);
-	if (error) 
+	if (error)
 		cp->caddr[0] = '\0';
 }
 
@@ -762,7 +762,7 @@ nextstate(struct con *cp)
 		if (match(cp->ibuf, "HELO") ||
 		    match(cp->ibuf, "EHLO")) {
 			int nextstate = 2;
-			cp->helo[0] = '\0'; 
+			cp->helo[0] = '\0';
 			gethelo(cp->helo, sizeof cp->helo, cp->ibuf);
 			if (cp->helo[0] == '\0') {
 				nextstate = 0;
@@ -880,7 +880,7 @@ nextstate(struct con *cp)
 				goto done;
 			}
 		} else {
-			if (match(cp->ibuf, "NOOP")) 
+			if (match(cp->ibuf, "NOOP"))
 				snprintf(cp->obuf, cp->osize,
 				    "250 2.0.0 OK I did nothing\r\n");
 			else
@@ -1277,15 +1277,15 @@ main(int argc, char *argv[])
 	/* open the pid file just before daemon */
 	fpid = fopen(pid_file, "w");
 	if (fpid == NULL) {
-		syslog(LOG_ERR, "exiting (couldn't create pid file %s)", 
+		syslog(LOG_ERR, "exiting (couldn't create pid file %s)",
 			pid_file);
 		err(1, "couldn't create pid file \"%s\"", pid_file);
 	}
-	/*check if PATH_SPAMD_DB is a regular file */ /* XXX fixme description */
+	/* check if PATH_SPAMD_DB is a regular file */
 	if (lstat(PATH_SPAMD_DB, &dbstat) == 0 && !S_ISREG(dbstat.st_mode)) {
-		syslog(LOG_ERR, "exiting (%s exist but is not a regular file)", 
+		syslog(LOG_ERR, "exiting (%s exist but is not a regular file)",
 			PATH_SPAMD_DB);
-		fprintf(stderr, "%s exiting (%s exist but is not a regular file)\n", 
+		fprintf(stderr, "%s exiting (%s exist but is not a regular file)\n",
 			__progname, PATH_SPAMD_DB);
 		exit(1);
 	}
@@ -1369,7 +1369,7 @@ jail:
 	if (fpid) {
 		fprintf(fpid, "%ld\n", (long) getpid());
 		if (fclose(fpid) == EOF) {
-			syslog(LOG_ERR, "exiting (couldn't close pid file %s)", 
+			syslog(LOG_ERR, "exiting (couldn't close pid file %s)",
 				pid_file);
 			exit(1);
 		}

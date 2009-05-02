@@ -40,5 +40,5 @@ extern int greyupdate(char *, char *, char *, char *, char *, int, char *);
 
 #if __FreeBSD_version < 601000
 extern long long  strtonum(const char *nptr, long long minval, long long maxval,
-		    const char **errstr); 
+		    const char **errstr);
 #endif

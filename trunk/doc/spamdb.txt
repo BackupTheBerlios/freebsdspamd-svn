@@ -4,20 +4,28 @@ spamdb can now sync new entries to peers the parameter for sync is
 the same as for spamd/spamlogd ( parameter -Y).
 
 Use cases:
+==========
   - spamd installed at the gateway, the MTA on another machine.
-    The MTA classifies no a sending server as spammer and trapps
+    The MTA classifies now a sending server as spammer and trapps
     the sending server with spamdb and sync.
-  - More than one MTA, you white/blacklist a server at MTA1 and
-    this entry is synced to all other MTA's
+
+  - You have more than one MTA, and you want to white/blacklist
+    a sending server with a single command at MTA-1 - MTA-n
+    in real time.
+
   - offload greyscanner from the gateway/MTA's to separate machine
   
-  Many more ideas...
+  - Many more ideas...
 
-Tip: create a wrapper script for easy usage
 
-Example sspamdb wrapper script:
+Example wrapper script to use spamdb with sync:
+===============================================
 
 #!/bin/sh
 PEERS="-Y IP.ADDR.PEER.1 -Y IP.ADDR.PEER.2"
 spamdb ${PEERS} $@
 
+
+Known bugs:
+===========
+  - spamdb sync does not work in multicast mode.

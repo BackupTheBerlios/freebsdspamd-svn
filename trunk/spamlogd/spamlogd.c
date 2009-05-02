@@ -227,7 +227,7 @@ logpkt_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 	if (ipstraddr[0] != '\0') {
 		if (!use_pf || hdr->dir == PF_IN)
 			logmsg(LOG_DEBUG,"inbound %s", ipstraddr);
-		else 
+		else
 			logmsg(LOG_DEBUG,"outbound %s", ipstraddr);
 		dbupdate(PATH_SPAMD_DB, ipstraddr);
 	}
@@ -386,16 +386,16 @@ main(int argc, char **argv)
 	}
 
 #ifdef __FreeBSD__
-	/*check if PATH_SPAMD_DB exist and is a regular file */ /* XXX fixme description */
+	/* check if PATH_SPAMD_DB exist and is a regular file */
 	rst = lstat(PATH_SPAMD_DB, &dbstat);
 	if (rst == -1 && errno == ENOENT){
 		syslog(LOG_ERR, "exiting (database %s does not exist)", PATH_SPAMD_DB);
 		err(1, "%s", PATH_SPAMD_DB);
 	}
 	if (rst == 0 && !S_ISREG(dbstat.st_mode)) {
-		syslog(LOG_ERR, "exiting (%s exist but is not a regular file)", 
+		syslog(LOG_ERR, "exiting (%s exist but is not a regular file)",
 			PATH_SPAMD_DB);
-		fprintf(stderr, "%s exiting (%s exist but is not a regular file)\n", 
+		fprintf(stderr, "%s exiting (%s exist but is not a regular file)\n",
 			__progname, PATH_SPAMD_DB);
 		exit(1);
 	}
@@ -421,7 +421,7 @@ main(int argc, char **argv)
 	/* open the pid file just before switch the user */
 	fpid = fopen(pid_file, "w");
 	if (fpid == NULL) {
-		syslog(LOG_ERR, "exiting (couldn't create pid file %s)", 
+		syslog(LOG_ERR, "exiting (couldn't create pid file %s)",
 				pid_file);
 		 err(1, "couldn't create pid file \"%s\"", pid_file);
 	}
@@ -449,7 +449,7 @@ main(int argc, char **argv)
 	if (fpid) {
 		fprintf(fpid, "%ld\n", (long) getpid());
 		if (fclose(fpid) == EOF) {
-			syslog(LOG_ERR, "exiting (couldn't close pid file %s)", 
+			syslog(LOG_ERR, "exiting (couldn't close pid file %s)",
 				pid_file);
 			exit (1);
 		}

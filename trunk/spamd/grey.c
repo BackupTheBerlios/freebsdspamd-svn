@@ -1,4 +1,4 @@
-/*	$OpenBSD: grey.c,v 1.46 2009/02/25 19:00:36 beck Exp $	*/
+/*	$OpenBSD: grey.c,v 1.47 2009/04/20 17:42:21 beck Exp $	*/
 
 /*
  * Copyright (c) 2004-2006 Bob Beck.  All rights reserved.
@@ -407,7 +407,6 @@ readsuffixlists(void)
 	}
 	if ((fp = fopen(alloweddomains_file, "r")) != NULL) {
 		while ((buf = fgetln(fp, &len))) {
-#ifdef __FreeBSD__
 			/* strip white space-characters */
 			while (len > 0 && isspace(buf[len-1]))
 				len--;
@@ -420,7 +419,6 @@ readsuffixlists(void)
 			/* jump over comments and blank lines */
 			if (*buf == '#' || *buf == '\n')
 				continue;
-#endif
 			if (buf[len-1] == '\n')
 				len--;
 			if ((m = malloc(sizeof(struct mail_addr))) == NULL)
@@ -941,7 +939,7 @@ greyupdate(char *dbname, char *helo, char *ip, char *from, char *to, int sync,
 		if (sync &&  low_prio_mx_ip &&
 		    (strcmp(cip, low_prio_mx_ip) == 0) &&
 		    ((startup + 60)  < now)) {
-			/* we haven't seen a greylist entry for this tuple, 
+			/* we haven't seen a greylist entry for this tuple,
 			 * and yet the connection was to a low priority MX
 			 * which we know can't be hit first if the client
 			 * is adhering to the RFC's - soo.. kill it!

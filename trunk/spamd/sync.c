@@ -1,4 +1,4 @@
-/*	$OpenBSD: sync.c,v 1.7 2008/05/22 19:54:11 deraadt Exp $	*/
+/*	$OpenBSD: sync.c,v 1.8 2009/04/20 17:42:21 beck Exp $	*/
 
 /*
  * Copyright (c) 2006, 2007 Reyk Floeter <reyk@openbsd.org>
@@ -531,7 +531,7 @@ sync_addr(time_t now, time_t expire, char *ip, u_int16_t type)
 	u_int hmac_len;
 
 	if (debug)
-		fprintf(stderr, "sync %s %s\n", 
+		fprintf(stderr, "sync %s %s\n",
 			type == SPAM_SYNC_WHITE ? "white" : "trapped", ip);
 
 	bzero(&hdr, sizeof(hdr));

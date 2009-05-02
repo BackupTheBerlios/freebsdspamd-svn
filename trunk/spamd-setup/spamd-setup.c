@@ -38,7 +38,7 @@
 #ifdef __OpenBSD__
 #include <netinet/ip_ipsp.h>
 #else
-#define __dead 
+#define __dead
 #endif
 #include <netdb.h>
 #include <zlib.h>
@@ -47,7 +47,7 @@
 int 		  use_pf = 1;
 int 		  ipfw_tabno = 2;
 #include <net/if.h>
-#include <sys/queue.h> 
+#include <sys/queue.h>
 #include <netinet/ip_fw.h>
 #endif
 
@@ -695,7 +695,7 @@ configure_ipfw(struct cidr **blacklists)
 		return (-1);
 	}
 
-	/* flush the table */   
+	/* flush the table */
 	ent.tbl = ipfw_tabno;
 	if (setsockopt(s, IPPROTO_IP, IP_FW_TABLE_FLUSH,  &ent.tbl, sizeof(ent.tbl)) < 0)
 	{
@@ -853,7 +853,7 @@ send_blacklist(struct blacklist *blist, in_port_t port)
 __dead void
 usage(void)
 {
-#ifndef __FreeBSD__ 
+#ifndef __FreeBSD__
 	fprintf(stderr, "usage: %s [-bDdn]\n", __progname);
 #else	
 	fprintf(stderr, "usage: %s [-bDdnmt]\n", __progname);

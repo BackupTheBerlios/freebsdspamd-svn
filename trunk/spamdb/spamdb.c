@@ -274,9 +274,9 @@ dblist(DB *db)
 			to = strchr(from, '\n');
 			if (to == NULL) {
 				/* probably old format - print it the
-				 * with an empty HELO field instead 
+				 * with an empty HELO field instead
 				 * of erroring out.
-				 */			  
+				 */
 				printf("GREY|%s|%s|%s|%s|%d|%d|%d|%d|%d\n",
 				    a, "", helo, from, gd.first, gd.pass,
 				    gd.expire, gd.bcount, gd.pcount);
@@ -308,7 +308,7 @@ static int
 usage(void)
 {
 #ifdef __FreeBSD__
-	fprintf(stderr, 
+	fprintf(stderr,
 		"usage: %s [-D] [-Y synctarget] [[-Tt] -a keys] [[-Tt] -d keys]\n",
 		__progname);
 #else		
@@ -323,11 +323,11 @@ usage(void)
 void
 check_opt_sequence(char **argv, int argc)
 {
-	int i; 
+	int i;
 	for (i=0; i<argc; i++)
 		if (argv[i][0] != '\0') {
 			if (argv[i][1] == 'Y' || argv[i][1] == 'D') {
-				fprintf(stderr, 
+				fprintf(stderr,
 					"\n%s: wrong opt sequence detected !\n",
 					__progname);
 				usage();
@@ -390,11 +390,11 @@ main(int argc, char **argv)
 	if (action == 0 && type != WHITE)
 		usage();
 #ifdef __FreeBSD__
-	/*check if PATH_SPAMD_DB is a regular file */ /* XXX fixme description */
+	/* check if PATH_SPAMD_DB is a regular file */
 	if (lstat(PATH_SPAMD_DB, &dbstat) == 0 && !S_ISREG(dbstat.st_mode)) {
-		syslog(LOG_ERR, "exiting (%s exist but is not a regular file)", 
+		syslog(LOG_ERR, "exiting (%s exist but is not a regular file)",
 			PATH_SPAMD_DB);
-		fprintf(stderr, "%s exiting (%s exist but is not a regular file)\n", 
+		fprintf(stderr, "%s exiting (%s exist but is not a regular file)\n",
 			__progname, PATH_SPAMD_DB);
 		exit(1);
 	}
@@ -407,7 +407,7 @@ main(int argc, char **argv)
 		if (errno == EFTYPE)	
 			err(1, "%s is old, run current spamd to convert it",
 			    PATH_SPAMD_DB);
-		else 
+		else
 			err(1, "cannot open %s for %s", PATH_SPAMD_DB,
 			    action ? "writing" : "reading");
 	}
@@ -429,7 +429,7 @@ main(int argc, char **argv)
 		return dblist(db);
 	case 1:
 #ifdef __FreeBSD__
-		check_opt_sequence(argv, argc); 
+		check_opt_sequence(argv, argc);
 #endif		
 		for (i=0; i<argc; i++)
 			if (argv[i][0] != '\0') {
@@ -441,7 +441,7 @@ main(int argc, char **argv)
 		break;
 	case 2:
 #ifdef __FreeBSD__
-		check_opt_sequence(argv, argc); 
+		check_opt_sequence(argv, argc);
 #endif		
 		for (i=0; i<argc; i++)
 			if (argv[i][0] != '\0') {
