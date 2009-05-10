@@ -91,6 +91,7 @@ int use_pf = 1;
 #endif
 
 extern char		*__progname;
+time_t			 whiteexp = WHITEEXP;
 
 void	logmsg(int , const char *, ...);
 void	sighandler_close(int);
@@ -141,7 +142,11 @@ init_pcap(void)
 		return (-1);
 	}
 
+#ifndef __FreeBSD__
+	if (pcap_datalink(hpcap) != DLT_PFLOG) {
+#else
 	if ((use_pf && pcap_datalink(hpcap) != DLT_PFLOG) || (!use_pf && pcap_datalink(hpcap)!=DLT_NULL)) {
+#endif
 		logmsg(LOG_ERR, "Invalid datalink type");
 		pcap_close(hpcap);
 		hpcap = NULL;
@@ -161,12 +166,10 @@ init_pcap(void)
 
 	pcap_freecode(&bpfp);
 
-#ifdef BIOCLOCK
 	if (ioctl(pcap_fileno(hpcap), BIOCLOCK) < 0) {
 		logmsg(LOG_ERR, "BIOCLOCK: %s", strerror(errno));
 		return (-1);
 	}
-#endif
 
 	return (0);
 }
@@ -274,7 +277,7 @@ dbupdate(char *dbname, char *ip)
 		gd.first = now;
 		gd.bcount = 1;
 		gd.pass = now;
-		gd.expire = now + WHITEEXP;
+		gd.expire = now + whiteexp;
 		memset(&dbk, 0, sizeof(dbk));
 		dbk.size = strlen(ip);
 		dbk.data = ip;
@@ -294,7 +297,7 @@ dbupdate(char *dbname, char *ip)
 		}
 		memcpy(&gd, dbd.data, sizeof(gd));
 		gd.pcount++;
-		gd.expire = now + WHITEEXP;
+		gd.expire = now + whiteexp;
 		memset(&dbk, 0, sizeof(dbk));
 		dbk.size = strlen(ip);
 		dbk.data = ip;
@@ -310,7 +313,7 @@ dbupdate(char *dbname, char *ip)
 	db->close(db);
 	db = NULL;
 	if (syncsend)
-		sync_white(now, now + WHITEEXP, ip);
+		sync_white(now, now + whiteexp, ip);
 	return (0);
  bad:
 	db->close(db);
@@ -322,11 +325,12 @@ void
 usage(void)
 {
 	fprintf(stderr,
-	    "usage: %s [-DI] [-i interface] [-l pflog_interface] [-Y synctarget]\n"
-#ifdef __FreeBSD__
-		"\t[-m mode]\n"
+	    "usage: %s [-DI] [-i interface] [-l pflog_interface] [-W whiteexp] "
+#ifndef __FreeBSD__
+	    "[-Y synctarget]\n", __progname);
+#else
+	    "[-Y synctarget] [-m mode]\n", __progname);
 #endif
-	    ,__progname);
 	exit(1);
 }
 
@@ -338,7 +342,8 @@ main(int argc, char **argv)
 	struct		stat dbstat;
 	int		rst;
 #endif	
-	int		 ch;
+	int		 ch, i;
+	const char 	*errstr;
 	struct passwd	*pw;
 	pcap_handler	 phandler = logpkt_handler;
 	int syncfd = 0;
@@ -349,10 +354,11 @@ main(int argc, char **argv)
 	if ((ent = getservbyname("spamd-sync", "udp")) == NULL)
 		errx(1, "Can't find service \"spamd-sync\" in /etc/services");
 	sync_port = ntohs(ent->s_port);
+
 #ifndef __FreeBSD__
-	while ((ch = getopt(argc, argv, "DIi:l:Y:")) != -1) {
+	while ((ch = getopt(argc, argv, "DIi:l:W:Y:")) != -1) {
 #else
-	while ((ch = getopt(argc, argv, "DIi:l:Y:m:")) != -1) {
+	while ((ch = getopt(argc, argv, "DIi:l:W:Y:m:")) != -1) {
 #endif
 		switch (ch) {
 		case 'D':
@@ -366,6 +372,13 @@ main(int argc, char **argv)
 			break;
 		case 'l':
 			pflogif = optarg;
+			break;
+		case 'W':
+			/* limit whiteexp to 2160 hours (90 days) */
+			i = strtonum(optarg, 1, (24 * 90), &errstr);
+			if (errstr)
+				usage();
+			whiteexp = (i * 60 * 60);
 			break;
 		case 'Y':
 			if (sync_addhost(optarg, sync_port) != 0)

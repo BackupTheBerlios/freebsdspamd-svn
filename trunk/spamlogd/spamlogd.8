@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd April 12, 2008
+.Dd May 10, 2009
 .Dt SPAMLOGD 8
 .Os
 .Sh NAME
@@ -25,6 +25,7 @@
 .Op Fl DI
 .Op Fl i Ar interface
 .Op Fl l Ar pflog_interface
+.Op Fl W Ar whiteexp
 .Op Fl Y Ar synctarget
 .Sh DESCRIPTION
 .Nm
@@ -77,6 +78,10 @@ Specify a
 interface to listen for connection notifications.
 The default is to watch for connections logged on
 .Dq pflog0 .
+.It Fl W Ar whiteexp
+Adjust the time for whiteexp in hours (default is 864
+hours, approximately 36 days. Min is 1 hour, max is 2160
+hours approximately 90 days).
 .It Fl Y Ar synctarget
 Add a target to receive synchronisation messages; see
 .Sx SYNCHRONISATION
