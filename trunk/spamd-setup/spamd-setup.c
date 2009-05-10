@@ -853,6 +853,7 @@ send_blacklist(struct blacklist *blist, in_port_t port)
 __dead void
 usage(void)
 {
+
 #ifndef __FreeBSD__
 	fprintf(stderr, "usage: %s [-bDdn]\n", __progname);
 #else	
@@ -869,10 +870,11 @@ main(int argc, char *argv[])
 	struct blacklist *blists;
 	struct servent *ent;
 	int daemonize = 0, i, ch;
+
 #ifndef __FreeBSD__
-	while ((ch = getopt(argc, argv, "bDdn")) != -1) {
+	while ((ch = getopt(argc, argv, "bdDn")) != -1) {
 #else
-	while ((ch = getopt(argc, argv, "bdnm:t:")) != -1) {
+	while ((ch = getopt(argc, argv, "bdDnm:t:")) != -1) {
 #endif
 		switch (ch) {
 		case 'n':
@@ -892,7 +894,6 @@ main(int argc, char *argv[])
 			if (strcmp(optarg, "ipfw") == 0)
 				use_pf=0;
 			break;
-
 #endif
 		case 'D':
 			daemonize = 1;
