@@ -401,7 +401,7 @@ main(int argc, char **argv)
 #ifdef __FreeBSD__
 	/* check if PATH_SPAMD_DB is a regular file */
 	if (lstat(PATH_SPAMD_DB, &dbstat) == 0 && !S_ISREG(dbstat.st_mode)) {
-		syslog_r(LOG_ERR, "exit \"%s\" : Not a regular file", PATH_SPAMD_DB);
+		syslog(LOG_ERR, "error %s (Not a regular file)", PATH_SPAMD_DB);
 		errx(1, "exit \"%s\" : Not a regular file", PATH_SPAMD_DB);
 	}
 #endif

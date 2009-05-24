@@ -1197,6 +1197,14 @@ main(int argc, char *argv[])
 		}
 	}
 
+#ifdef __FreeBSD__
+	/* check if PATH_SPAMD_DB is a regular file */
+	if (lstat(PATH_SPAMD_DB, &dbstat) == 0 && !S_ISREG(dbstat.st_mode)) {
+		syslog(LOG_ERR, "error %s (Not a regular file)", PATH_SPAMD_DB);
+		errx(1, "exit \"%s\" : Not a regular file", PATH_SPAMD_DB);
+	}
+#endif
+
 	setproctitle("[priv]%s%s",
 	    greylist ? " (greylist)" : "",
 	    (syncrecv || syncsend) ? " (sync)" : "");
@@ -1276,13 +1284,8 @@ main(int argc, char *argv[])
 	/* open the pid file just before daemon */
 	fpid = fopen(pid_file, "w");
 	if (fpid == NULL) {
-		syslog_r(LOG_ERR, "exit (couldn't create pid file %s)", pid_file);
-		err(1, "couldn't create pid file \"%s\"", pid_file);
-	}
-	/* check if PATH_SPAMD_DB is a regular file */
-	if (lstat(PATH_SPAMD_DB, &dbstat) == 0 && !S_ISREG(dbstat.st_mode)) {
-		syslog_r(LOG_ERR, "exit \"%s\" : Not a regular file", PATH_SPAMD_DB);
-		errx(1, "exit \"%s\" : Not a regular file", PATH_SPAMD_DB);
+		syslog(LOG_ERR, "error can't create pid file %s (%m)", pid_file);
+		err(1, "can't create pid file \"%s\"", pid_file);
 	}
 #endif	
 
@@ -1364,8 +1367,7 @@ jail:
 	if (fpid) {
 		fprintf(fpid, "%ld\n", (long) getpid());
 		if (fclose(fpid) == EOF) {
-			syslog(LOG_ERR, "exit (couldn't close pid file %s)",
-				pid_file);
+			syslog(LOG_ERR, "error can't close pid file %s (%m)", pid_file);
 			exit(1);
 		}
 	}

@@ -132,7 +132,7 @@ init_pcap(void)
 			
 #ifdef __FreeBSD__
 	if(!use_pf) {
-		strncpy(filter,"ip and port 25 and tcp[13]&0x12=0x2",sizeof(filter));
+		strncpy(filter, "ip and port 25 and tcp[13]&0x12=0x2", sizeof(filter));
 	}
 #endif
 
@@ -402,15 +402,12 @@ main(int argc, char **argv)
 	/* check if PATH_SPAMD_DB exist and is a regular file */
 	rst = lstat(PATH_SPAMD_DB, &dbstat);
 	if (rst == -1 && errno == ENOENT){
-		syslog_r(LOG_ERR, "exiting (database %s does not exist)", PATH_SPAMD_DB);
+		syslog(LOG_ERR, "error %s (%m)", PATH_SPAMD_DB);
 		err(1, "%s", PATH_SPAMD_DB);
 	}
 	if (rst == 0 && !S_ISREG(dbstat.st_mode)) {
-		syslog_r(LOG_ERR, "exiting (%s exist but is not a regular file)",
-			PATH_SPAMD_DB);
-		fprintf(stderr, "%s exiting (%s exist but is not a regular file)\n",
-			__progname, PATH_SPAMD_DB);
-		exit(1);
+		syslog(LOG_ERR, "error %s (Not a regular file)", PATH_SPAMD_DB);
+		errx(1, "exit \"%s\" : Not a regular file", PATH_SPAMD_DB);
 	}
 #endif	
 	signal(SIGINT , sighandler_close);
@@ -434,9 +431,8 @@ main(int argc, char **argv)
 	/* open the pid file just before switch the user */
 	fpid = fopen(pid_file, "w");
 	if (fpid == NULL) {
-		syslog_r(LOG_ERR, "exiting (couldn't create pid file %s)",
-				pid_file);
-		 err(1, "couldn't create pid file \"%s\"", pid_file);
+		syslog(LOG_ERR, "error can't create pid file %s (%m)", pid_file);
+		err(1, "can't create pid file \"%s\"", pid_file);
 	}
 #endif	
 
@@ -462,8 +458,7 @@ main(int argc, char **argv)
 	if (fpid) {
 		fprintf(fpid, "%ld\n", (long) getpid());
 		if (fclose(fpid) == EOF) {
-			syslog_r(LOG_ERR, "exiting (couldn't close pid file %s)",
-				pid_file);
+			syslog(LOG_ERR, "error can't close pid file %s (%m)", pid_file);
 			exit (1);
 		}
 	}
