@@ -81,11 +81,11 @@ pcap_t			*hpcap = NULL;
 #ifdef __OpenBSD__
 struct syslog_data	 sdata	= SYSLOG_DATA_INIT;
 #else
-#define	syslog_r(l, s, args...)	syslog(l,args)
-#define	vsyslog_r(l, s, args...)	vsyslog(l,args)
-#define	openlog_r(i, l, f, s)	openlog(i, l, f)
-#define	closelog_r(l)	closelog()
-int sdata = 0;					/* dummy */
+#define	syslog_r(l, s, args...)     syslog(l,args)
+#define	vsyslog_r(l, s, args...)    vsyslog(l,args)
+#define	openlog_r(i, l, f, s)       openlog(i, l, f)
+#define	closelog_r(l)               closelog()
+int sdata = 0;                      /* dummy */
 char *pid_file = "/var/run/spamlogd.pid";
 int use_pf = 1;
 #endif
@@ -402,11 +402,11 @@ main(int argc, char **argv)
 	/* check if PATH_SPAMD_DB exist and is a regular file */
 	rst = lstat(PATH_SPAMD_DB, &dbstat);
 	if (rst == -1 && errno == ENOENT){
-		syslog(LOG_ERR, "exiting (database %s does not exist)", PATH_SPAMD_DB);
+		syslog_r(LOG_ERR, "exiting (database %s does not exist)", PATH_SPAMD_DB);
 		err(1, "%s", PATH_SPAMD_DB);
 	}
 	if (rst == 0 && !S_ISREG(dbstat.st_mode)) {
-		syslog(LOG_ERR, "exiting (%s exist but is not a regular file)",
+		syslog_r(LOG_ERR, "exiting (%s exist but is not a regular file)",
 			PATH_SPAMD_DB);
 		fprintf(stderr, "%s exiting (%s exist but is not a regular file)\n",
 			__progname, PATH_SPAMD_DB);
@@ -434,7 +434,7 @@ main(int argc, char **argv)
 	/* open the pid file just before switch the user */
 	fpid = fopen(pid_file, "w");
 	if (fpid == NULL) {
-		syslog(LOG_ERR, "exiting (couldn't create pid file %s)",
+		syslog_r(LOG_ERR, "exiting (couldn't create pid file %s)",
 				pid_file);
 		 err(1, "couldn't create pid file \"%s\"", pid_file);
 	}
@@ -462,7 +462,7 @@ main(int argc, char **argv)
 	if (fpid) {
 		fprintf(fpid, "%ld\n", (long) getpid());
 		if (fclose(fpid) == EOF) {
-			syslog(LOG_ERR, "exiting (couldn't close pid file %s)",
+			syslog_r(LOG_ERR, "exiting (couldn't close pid file %s)",
 				pid_file);
 			exit (1);
 		}
