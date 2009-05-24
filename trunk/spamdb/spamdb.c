@@ -68,6 +68,7 @@ int syncsend;
 int debug = 0;
 int greylist = 1;
 FILE *grey = NULL;
+time_t			 whiteexp = WHITEEXP;
 #endif
 
 int
@@ -115,7 +116,7 @@ dbupdate(DB *db, char *ip, int add, int type)
 		if (syncsend) {
 			switch (type) {
 			case WHITE:
-				sync_white(now, now + WHITEEXP, ip);
+				sync_white(now, now + whiteexp, ip);
 				syslog_r(LOG_INFO, &sdata, "send white %s", ip);
 				break;
 			case TRAPHIT:
@@ -143,7 +144,7 @@ dbupdate(DB *db, char *ip, int add, int type)
 			switch (type) {
 			case WHITE:
 				gd.pass = now;
-				gd.expire = now + WHITEEXP;
+				gd.expire = now + whiteexp;
 				break;
 			case TRAPHIT:
 				gd.expire = now + TRAPEXP;
@@ -185,7 +186,7 @@ dbupdate(DB *db, char *ip, int add, int type)
 			switch (type) {
 			case WHITE:
 				gd.pass = now;
-				gd.expire = now + WHITEEXP;
+				gd.expire = now + whiteexp;
 				break;
 			case TRAPHIT:
 				gd.expire = now + TRAPEXP;
@@ -246,15 +247,15 @@ dblist(DB *db)
 			/* this is a non-greylist entry */
 			switch (gd.pcount) {
 			case -1: /* spamtrap hit, with expiry time */
-				printf("TRAPPED|%s|%d\n", a, gd.expire);
+				printf("TRAPPED|%s|%d\n", a, (int)gd.expire);
 				break;
 			case -2: /* spamtrap address */
 				printf("SPAMTRAP|%s\n", a);
 				break;
 			default: /* whitelist */
 				printf("WHITE|%s|||%d|%d|%d|%d|%d\n", a,
-				    gd.first, gd.pass, gd.expire, gd.bcount,
-				    gd.pcount);
+				    (int)gd.first, (int)gd.pass, (int)gd.expire,
+				    gd.bcount, gd.pcount);
 				break;
 			}
 		} else {
@@ -278,15 +279,15 @@ dblist(DB *db)
 				 * of erroring out.
 				 */
 				printf("GREY|%s|%s|%s|%s|%d|%d|%d|%d|%d\n",
-				    a, "", helo, from, gd.first, gd.pass,
-				    gd.expire, gd.bcount, gd.pcount);
+				    a, "", helo, from, (int)gd.first, (int)gd.pass,
+				    (int)gd.expire, gd.bcount, gd.pcount);
 			
 			} else {
 				*to = '\0';
 				to++;
 				printf("GREY|%s|%s|%s|%s|%d|%d|%d|%d|%d\n",
-				    a, helo, from, to, gd.first, gd.pass,
-				    gd.expire, gd.bcount, gd.pcount);
+				    a, helo, from, to, (int)gd.first, (int)gd.pass,
+				    (int)gd.expire, gd.bcount, gd.pcount);
 			}
 		}
 		free(a);
@@ -349,12 +350,13 @@ main(int argc, char **argv)
 	struct stat dbstat;
 	char *sync_iface = NULL;
 	char *sync_baddr = NULL;
+	const char 	*errstr;
 
 	if ((ent = getservbyname("spamd-sync", "udp")) == NULL)
 		errx(1, "Can't find service \"spamd-sync\" in /etc/services");
 	sync_port = ntohs(ent->s_port);
 
-	while ((ch = getopt(argc, argv, "DY:adtT")) != -1) {
+	while ((ch = getopt(argc, argv, "DY:W:adtT")) != -1) {
 		switch (ch) {
 		case 'D':
 			debug = 1;
@@ -363,6 +365,13 @@ main(int argc, char **argv)
 			if (sync_addhost(optarg, sync_port) != 0)
 				sync_iface = optarg;
 			syncsend++;
+			break;
+		case 'W':
+			/* limit whiteexp to 2160 hours (90 days) */
+			i = strtonum(optarg, 1, (24 * 90), &errstr);
+			if (errstr)
+				usage();
+			whiteexp = (i * 60 * 60);
 			break;
 #else			
 	while ((ch = getopt(argc, argv, "adtT")) != -1) {
@@ -392,11 +401,8 @@ main(int argc, char **argv)
 #ifdef __FreeBSD__
 	/* check if PATH_SPAMD_DB is a regular file */
 	if (lstat(PATH_SPAMD_DB, &dbstat) == 0 && !S_ISREG(dbstat.st_mode)) {
-		syslog(LOG_ERR, "exiting (%s exist but is not a regular file)",
-			PATH_SPAMD_DB);
-		fprintf(stderr, "%s exiting (%s exist but is not a regular file)\n",
-			__progname, PATH_SPAMD_DB);
-		exit(1);
+		syslog_r(LOG_ERR, "exit \"%s\" : Not a regular file", PATH_SPAMD_DB);
+		errx(1, "exit \"%s\" : Not a regular file", PATH_SPAMD_DB);
 	}
 #endif
 	

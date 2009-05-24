@@ -356,7 +356,7 @@ sync_recv(void)
 				/* send this info to the greylister */
 				fprintf(grey, "WHITE:%s:", inet_ntoa(ip));
 				fprintf(grey, "%s:%u\n",
-				    inet_ntoa(addr.sin_addr), expire);
+				    inet_ntoa(addr.sin_addr), (u_int32_t)expire);
 				fflush(grey);
 			}
 			break;
@@ -377,7 +377,7 @@ sync_recv(void)
 				/* send this info to the greylister */
 				fprintf(grey, "TRAP:%s:", inet_ntoa(ip));
 				fprintf(grey, "%s:%u\n",
-				    inet_ntoa(addr.sin_addr), expire);
+				    inet_ntoa(addr.sin_addr), (u_int32_t)expire);
 				fflush(grey);
 			}
 			break;

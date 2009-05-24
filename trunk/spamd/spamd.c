@@ -1,4 +1,4 @@
-/*	$OpenBSD: spamd.c,v 1.104 2008/07/11 15:05:59 reyk Exp $	*/
+/*	$OpenBSD: spamd.c,v 1.106 2009/05/20 20:37:43 thib Exp $	*/
 
 /*
  * Copyright (c) 2002-2007 Bob Beck.  All rights reserved.
@@ -1056,6 +1056,7 @@ main(int argc, char *argv[])
 	extern char *__progname;
 	FILE *fpid = NULL;
 	struct stat dbstat;
+	int pt, ge, we;
 #endif	
 	fd_set *fdsr = NULL, *fdsw = NULL;
 	struct sockaddr_in sin;
@@ -1131,15 +1132,14 @@ main(int argc, char *argv[])
 			greylist = 0;
 			break;
 		case 'G':
-			if (sscanf(optarg, "%d:%d:%d", &passtime, &greyexp,
-			    &whiteexp) != 3)
+			if (sscanf(optarg, "%d:%d:%d", &pt, &ge, &we) != 3)
 				usage();
 			/* convert to seconds from minutes */
-			passtime *= 60;
+			passtime = pt * 60;
 			/* convert to seconds from hours */
-			whiteexp *= (60 * 60);
+			whiteexp = we * (60 * 60);
 			/* convert to seconds from hours */
-			greyexp *= (60 * 60);
+			greyexp  = ge * (60 * 60);
 			break;
 		case 'h':
 			bzero(&hostname, sizeof(hostname));
@@ -1269,25 +1269,20 @@ main(int argc, char *argv[])
 			err(1, "sync init");
 	}
 
-	pw = getpwnam("_spamd");
-	if (!pw)
-		pw = getpwnam("nobody");
+	if ((pw = getpwnam("_spamd")) == NULL)
+		errx(1, "no such user _spamd");
 
 #ifdef __FreeBSD__
 	/* open the pid file just before daemon */
 	fpid = fopen(pid_file, "w");
 	if (fpid == NULL) {
-		syslog(LOG_ERR, "exiting (couldn't create pid file %s)",
-			pid_file);
+		syslog_r(LOG_ERR, "exit (couldn't create pid file %s)", pid_file);
 		err(1, "couldn't create pid file \"%s\"", pid_file);
 	}
 	/* check if PATH_SPAMD_DB is a regular file */
 	if (lstat(PATH_SPAMD_DB, &dbstat) == 0 && !S_ISREG(dbstat.st_mode)) {
-		syslog(LOG_ERR, "exiting (%s exist but is not a regular file)",
-			PATH_SPAMD_DB);
-		fprintf(stderr, "%s exiting (%s exist but is not a regular file)\n",
-			__progname, PATH_SPAMD_DB);
-		exit(1);
+		syslog_r(LOG_ERR, "exit \"%s\" : Not a regular file", PATH_SPAMD_DB);
+		errx(1, "exit \"%s\" : Not a regular file", PATH_SPAMD_DB);
 	}
 #endif	
 
@@ -1369,7 +1364,7 @@ jail:
 	if (fpid) {
 		fprintf(fpid, "%ld\n", (long) getpid());
 		if (fclose(fpid) == EOF) {
-			syslog(LOG_ERR, "exiting (couldn't close pid file %s)",
+			syslog(LOG_ERR, "exit (couldn't close pid file %s)",
 				pid_file);
 			exit(1);
 		}

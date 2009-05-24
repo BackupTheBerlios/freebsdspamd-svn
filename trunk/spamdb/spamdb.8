@@ -24,6 +24,7 @@
 .Nm spamdb
 .Oo Fl D Oc
 .Op Fl Y Ar synctarget
+.Op Fl W Ar whiteexp
 .Oo Oo Fl Tt Oc
 .Fl a Ar keys Oc
 .Oo Oo Fl Tt Oc
@@ -40,18 +41,14 @@ The options are as follows:
 .It Fl D
 debug mode
 .It Fl Y Ar synctarget
-Add target
-.Ar synctarget
-to receive synchronisation messages.
-.Ar synctarget
-can be either an IPv4 address for unicast messages
-or a network interface and optional TTL value for multicast messages
-to the group 224.0.1.240.
-If the multicast TTL is not specified, a default value of 1 is used.
-This option can be specified multiple times.
-See also
+Add a target to receive synchronisation messages; see
 .Sx SYNCHRONISATION
 below.
+This option can be specified multiple times.
+.It Fl W Ar whiteexp
+Adjust the time for whiteexp in hours (default is 864
+hours, approximately 36 days. Min is 1 hour, max is 2160
+hours approximately 90 days).
 .It Fl a Ar keys
 Add or update the entries for
 .Ar keys .
@@ -190,9 +187,9 @@ Times may be converted to human readable format using:
 .Pp
 .Sh SYNCHRONISATION
 .Nm
-supports realtime synchronisation of white or blacklist states between
+supports realtime synchronisation of white or blacklist entries between
 a number of
-.Em spamd
+.Xr spamd 8
 daemons running on multiple machines,
 using the
 .Fl Y
@@ -208,18 +205,6 @@ The following example will send a unicast synchronisation messages.
 # /usr/local/sbin/spamdb -Y foo.example.org -ta 1.2.3.4 2.3.4.5
 .Ed
 .Pp
-If the file
-.Pa /usr/local/etc/spamd/spamd.key
-exists,
-.Nm
-will calculate the message-digest fingerprint (checksum) for the file
-and use it as a shared key to authenticate the synchronisation messages.
-The file itself can contain any data.
-For example, to create a secure random key:
-.Bd -literal -offset indent
-# dd if=/dev/random of=/usr/local/etc/spamd/spamd.key bs=2048 count=1
-.Ed
-.Pp
 The IP send to peers is logged via
 .Xr syslogd 8
 at
@@ -232,9 +217,6 @@ section can be used to log connection details to a dedicated file:
 !spamdb
 daemon.info			/var/log/spamdb
 .Ed
-.Pp
-The file needs to be copied to all hosts
-sending or receiving synchronisation messages.
 .Sh FILES
 /var/db/spamd
 .Pp
