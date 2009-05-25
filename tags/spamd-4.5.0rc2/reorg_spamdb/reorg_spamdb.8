@@ -1,0 +1,71 @@
+.\"	$Id: reorg_spamdb.8,v 1.1 2009/05/22 13:02:31 ohauer Exp ohauer $
+.\"
+.\" Copyright (c) 2009 Olli Hauer.  All rights reserved.
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.Dd May 23, 2009
+.Dt REORG_SPAMDB 8
+.Os
+.Sh NAME
+.Nm reorg_spamdb
+.Nd spamd database tool
+.Sh SYNOPSIS
+.Nm reorg_spamdb
+.Oo Fl r Oc
+.Op Fl v
+.Sh DESCRIPTION
+.Nm
+reorganize the spamd database in
+.Pa /var/db/spamd
+used for
+.Xr spamd 8 .
+.Pp
+The options are as follows:
+.Bl -tag -width Ds
+.It Fl r
+replace existing
+.Xr spamdb 8
+with reorganized one. If this flag is not used the new db is saved
+as /var/db/spamd.reorg. This parameter is only valid if the source
+db is already in hash format.
+.It Fl v
+verbose mode
+.El
+.Pp
+All actions are logged via
+.Xr syslogd 8
+at
+.Dv LOG_INFO
+or
+.Dv LOG_ERR
+level.
+The following
+.Xr syslog.conf 5
+section can be used to log reorganization details to a dedicated file:
+.Bd -literal -offset indent
+!reorg_spamdb
+daemon.err;daemon.info			/var/log/spamd
+.Ed
+.Pp
+.Sh FILES
+/var/db/spamd
+.Sh SEE ALSO
+.Xr spamd 8 ,
+.Xr spamdb 8
+.Sh HISTORY
+The
+.Nm
+command
+appeared in
+FreeBSD spamd v4.5.0 .
