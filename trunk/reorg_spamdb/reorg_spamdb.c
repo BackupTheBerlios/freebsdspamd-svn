@@ -76,7 +76,7 @@ void
 usage(void)
 {
     extern char *__progname;
-    fprintf(stderr, "usage: %s [rv]\n", __progname);
+    fprintf(stderr, "usage: %s [-rv]\n", __progname);
     exit(1);
 }
 
@@ -224,13 +224,14 @@ convert_spamd_db(int dbformat)
                 tsfn, (u_int)statbuf_out.st_size,
                 (double)statbuf_out.st_size / (1024 * 1024));
 
-    if (verbose)
-        /* print details for output database */
-        printf ("out: %-20s uid: %-4d gid: %-4d mode %04o format: %-5s "
-            "size: %-10u (%.3f MiB)\n", tsfn, (int)statbuf_out.st_uid,
-            (int)statbuf_out.st_gid, statbuf_out.st_mode & 0777,
-            "hash", (u_int)statbuf_out.st_size,
-            (double)statbuf_out.st_size / (1024 * 1024));
+        if (verbose) {
+            /* print details for output database */
+            printf ("out: %-20s uid: %-4d gid: %-4d mode %04o format: %-5s "
+                "size: %-10u (%.3f MiB)\n", tsfn, (int)statbuf_out.st_uid,
+                (int)statbuf_out.st_gid, statbuf_out.st_mode & 0777,
+                "hash", (u_int)statbuf_out.st_size,
+                (double)statbuf_out.st_size / (1024 * 1024) );
+        }
     }
 }
 
@@ -279,7 +280,6 @@ sig_term(int sig)
 int
 main(int argc, char *argv[])
 {
-    extern char *__progname;
     struct sigaction sa;
     int ch, r;
 
@@ -313,7 +313,7 @@ main(int argc, char *argv[])
     /* check if PATH_SPAMD_DB exist and is a regular file */
     r = lstat(PATH_SPAMD_DB, &statbuf_in);
     if ( r == 0 && !S_ISREG(statbuf_in.st_mode)) {
-        syslog_r(LOG_ERR, "exit \"%s\" : Not a regular file", PATH_SPAMD_DB);
+        syslog_r(LOG_ERR, &sdata, "exit \"%s\" : Not a regular file", PATH_SPAMD_DB);
         errx(1, "exit \"%s\" : Not a regular file", PATH_SPAMD_DB);
     }
     if (r == -1) {
