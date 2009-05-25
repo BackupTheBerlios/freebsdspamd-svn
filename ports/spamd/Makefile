@@ -6,7 +6,7 @@
 #
 
 PORTNAME=	spamd
-PORTVERSION=	4.5.0rc1
+PORTVERSION=	4.5.0rc2
 CATEGORIES=	mail
 MASTER_SITES=	BERLIOS
 MASTER_SITE_SUBDIR=freebsdspamd
@@ -25,7 +25,7 @@ SPAMDUID=	132
 SPAMDGID=	${SPAMDUID}
 
 MAN5=		spamd.conf.5
-MAN8=		spamd.8 spamd-setup.8 spamdb.8 spamlogd.8
+MAN8=		spamd.8 spamd-setup.8 spamdb.8 spamlogd.8 reorg_spamdb.8
 PORTDOCS=	ipfw-spamd.txt spamdb.txt
 
 PLIST_DIRS=	etc/spamd
@@ -33,6 +33,7 @@ PLIST_FILES=	libexec/spamd \
 		libexec/spamlogd \
 		sbin/spamd-setup \
 		sbin/spamdb \
+		sbin/reorg_spamdb \
 		etc/spamd/spamd.conf.sample
 
 CONFIG_DIR=		${PREFIX}/etc/spamd
@@ -73,11 +74,13 @@ do-install:
 	${INSTALL_PROGRAM} ${WRKSRC}/spamlogd/spamlogd ${PREFIX}/libexec
 	${INSTALL_PROGRAM} ${WRKSRC}/spamd-setup/spamd-setup ${PREFIX}/sbin
 	${INSTALL_PROGRAM} ${WRKSRC}/spamdb/spamdb ${PREFIX}/sbin
+	${INSTALL_PROGRAM} ${WRKSRC}/reorg_spamdb/reorg_spamdb ${PREFIX}/sbin
 	${INSTALL_MAN} ${WRKSRC}/etc/spamd.conf.5 ${PREFIX}/man/man5
 	${INSTALL_MAN} ${WRKSRC}/spamd/spamd.8 ${PREFIX}/man/man8
 	${INSTALL_MAN} ${WRKSRC}/spamd-setup/spamd-setup.8 ${PREFIX}/man/man8
 	${INSTALL_MAN} ${WRKSRC}/spamdb/spamdb.8 ${PREFIX}/man/man8
 	${INSTALL_MAN} ${WRKSRC}/spamlogd/spamlogd.8 ${PREFIX}/man/man8
+	${INSTALL_MAN} ${WRKSRC}/reorg_spamdb/reorg_spamdb.8 ${PREFIX}/man/man8
 	@if [ ! -d ${CONFIG_DIR} ]; then                        \
 		${MKDIR} ${CONFIG_DIR}; \
 	fi

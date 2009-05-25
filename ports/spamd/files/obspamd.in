@@ -36,7 +36,7 @@ pidfile="/var/run/spamd.pid"
 obspamd_precmd()
 {
 	_rc=0
-	echo "${obspamd_flags}" | grep "\-b" 2>&1 > /dev/null
+	echo "${obspamd_flags}" | grep " \-b " 2>&1 > /dev/null
 	if [ $? -eq 1 ]; then
 		/sbin/mount -p | grep 'fdescfs.*/dev/fd.*fdescfs.*rw' 2>&1 > /dev/null
 		_rc=${?}
@@ -56,7 +56,7 @@ obspamd_postcmd()
 {
 	if [ -x %%PREFIX%%/sbin/spamd-setup ]; then
 		if [ -r %%PREFIX%%/etc/spamd/spamd.conf ]; then
-			%%PREFIX%%/sbin/spamd-setup &
+			%%PREFIX%%/sbin/spamd-setup -D
 		fi
 	fi
 }
