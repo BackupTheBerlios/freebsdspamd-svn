@@ -29,11 +29,10 @@ MAN8=		spamd.8 spamd-setup.8 spamdb.8 spamlogd.8 reorg_spamdb.8
 PORTDOCS=	ipfw-spamd.txt spamdb.txt
 
 PLIST_DIRS=	etc/spamd
-PLIST_FILES=	libexec/spamd \
-		libexec/spamlogd \
+PLIST_FILES=	libexec/spamlogd \
+		sbin/reorg_spamdb \
 		sbin/spamd-setup \
 		sbin/spamdb \
-		sbin/reorg_spamdb \
 		etc/spamd/spamd.conf.sample
 
 CONFIG_DIR=		${PREFIX}/etc/spamd
@@ -44,6 +43,19 @@ PLIST_SUB=	SPAMDDIR=${SPAMDDIR} \
 		SPAMDGROUP=${SPAMDGROUP} \
 		SPAMDUID=${SPAMDUID} \
 		SPAMDGID=${SPAMDGID}
+
+# If you are a CPANEL user the this option is for you!
+# CPANEL sends periodic a 'kill -TERM spamd' to the SpamAssassin spamd, and
+# this kills also the OpenBSD spamd daemon.
+# With this option spamd will be installed as obspamd, and the rc script will
+# be adjusted. Man page and pid file will not be renamed!
+.if !defined(CPANEL)
+PLIST_FILES+=	libexec/spamd
+PLIST_SUB+=	SPAMDBIN=spamd
+.else
+PLIST_FILES+=	libexec/obspamd
+PLIST_SUB+=	SPAMDBIN=obspamd
+.endif
 
 SUB_FILES=	pkg-install \
 		pkg-deinstall \
@@ -70,7 +82,11 @@ post-install:
 	@${CAT} ${PKGMESSAGE}
 
 do-install:
+.if !defined(CPANEL)
 	${INSTALL_PROGRAM} ${WRKSRC}/spamd/spamd ${PREFIX}/libexec
+.else
+	${INSTALL_PROGRAM} ${WRKSRC}/spamd/spamd ${PREFIX}/libexec/obspamd
+.endif
 	${INSTALL_PROGRAM} ${WRKSRC}/spamlogd/spamlogd ${PREFIX}/libexec
 	${INSTALL_PROGRAM} ${WRKSRC}/spamd-setup/spamd-setup ${PREFIX}/sbin
 	${INSTALL_PROGRAM} ${WRKSRC}/spamdb/spamdb ${PREFIX}/sbin
