@@ -310,7 +310,7 @@ usage(void)
 {
 #ifdef __FreeBSD__
 	fprintf(stderr,
-		"usage: %s [-D] [-Y synctarget] [[-Tt] -a keys] [[-Tt] -d keys]\n",
+		"usage: %s [-D] [-Y synctarget] [-W whiteexp] [[-Tt] -a keys] [[-Tt] -d keys]\n",
 		__progname);
 #else		
 	fprintf(stderr, "usage: %s [[-Tt] -a keys] [[-Tt] -d keys]\n", __progname);
