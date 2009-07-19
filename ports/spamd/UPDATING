@@ -9,5 +9,6 @@
   
   - sync for spamdb is now implemented (parameter -Y)
   - if you use cPanel build the port with -DCPANEL,
-    spamd will be installed as obspamd and the rc script is obspamd.cpanel
+    spamd binary will be installed as obspamd to protect
+    the process from a kill -HUP from cPanel
 
