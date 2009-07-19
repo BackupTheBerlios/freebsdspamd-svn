@@ -25,7 +25,6 @@ New features:
     See %%PREFIX%%/%%DOCSDIR%%/ for usage manual.
   - spamdb and spamlogd whiteexp times can now adjusted
     with parameter -W
-  - new tool reorg_spamdb
 
 
  !!!!!!!!!!!! --  I M P O T A N T  -  N O T E S  -- !!!!!!!!!!!!!!!!!
@@ -35,7 +34,7 @@ New features:
     The sync protocol has changed for versions > 4.1.x
 
     If spamd is installed in distributed environment and sync is 
-    enabled, stop sync at every node until they are are updated.
+    enabled, stop sync at every node until they are updated.
   
  !!!!!!!!!!!! --  I M P O T A N T  -  N O T E S  -- !!!!!!!!!!!!!!!!!
 

@@ -6,13 +6,13 @@
 #
 
 PORTNAME=	spamd
-PORTVERSION=	4.5.0rc2
+PORTVERSION=	4.5.0
 CATEGORIES=	mail
 MASTER_SITES=	BERLIOS
 MASTER_SITE_SUBDIR=freebsdspamd
 DISTNAME=	${PORTNAME}-${PORTVERSION}
 
-MAINTAINER=	samm@os2.kiev.ua
+MAINTAINER=	ohauer@gmx.de
 COMMENT=	Traps spammers with a very slow smtp-login and return 4xx error
 
 USE_RC_SUBR?=	obspamd obspamlogd
@@ -25,12 +25,11 @@ SPAMDUID=	132
 SPAMDGID=	${SPAMDUID}
 
 MAN5=		spamd.conf.5
-MAN8=		spamd.8 spamd-setup.8 spamdb.8 spamlogd.8 reorg_spamdb.8
+MAN8=		spamd.8 spamd-setup.8 spamdb.8 spamlogd.8
 PORTDOCS=	ipfw-spamd.txt spamdb.txt
 
 PLIST_DIRS=	etc/spamd
 PLIST_FILES=	libexec/spamlogd \
-		sbin/reorg_spamdb \
 		sbin/spamd-setup \
 		sbin/spamdb \
 		etc/spamd/spamd.conf.sample
@@ -71,7 +70,6 @@ pre-fetch:
 	@${ECHO} " sync between old (4.1.x) and new version"
 	@${ECHO} " until every node is updated"
 	@${ECHO} ""
-	@${ECHO} " Hit ^c now and read ${PORTSDIR}/UPDATING section or"
 	@read -p "Hit ^c now to stop, any key to continue: " -t 5 a || true
 	@${ECHO} ""
 
@@ -90,13 +88,11 @@ do-install:
 	${INSTALL_PROGRAM} ${WRKSRC}/spamlogd/spamlogd ${PREFIX}/libexec
 	${INSTALL_PROGRAM} ${WRKSRC}/spamd-setup/spamd-setup ${PREFIX}/sbin
 	${INSTALL_PROGRAM} ${WRKSRC}/spamdb/spamdb ${PREFIX}/sbin
-	${INSTALL_PROGRAM} ${WRKSRC}/reorg_spamdb/reorg_spamdb ${PREFIX}/sbin
 	${INSTALL_MAN} ${WRKSRC}/etc/spamd.conf.5 ${PREFIX}/man/man5
 	${INSTALL_MAN} ${WRKSRC}/spamd/spamd.8 ${PREFIX}/man/man8
 	${INSTALL_MAN} ${WRKSRC}/spamd-setup/spamd-setup.8 ${PREFIX}/man/man8
 	${INSTALL_MAN} ${WRKSRC}/spamdb/spamdb.8 ${PREFIX}/man/man8
 	${INSTALL_MAN} ${WRKSRC}/spamlogd/spamlogd.8 ${PREFIX}/man/man8
-	${INSTALL_MAN} ${WRKSRC}/reorg_spamdb/reorg_spamdb.8 ${PREFIX}/man/man8
 	@if [ ! -d ${CONFIG_DIR} ]; then                        \
 		${MKDIR} ${CONFIG_DIR}; \
 	fi
