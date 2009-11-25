@@ -1,4 +1,4 @@
-/*	$OpenBSD: spamd-setup.c,v 1.36 2009/06/02 22:38:45 ray Exp $ */
+/*	$OpenBSD: spamd-setup.c,v 1.37 2009/09/09 16:05:55 claudio Exp $ */
 
 /*
  * Copyright (c) 2003 Bob Beck.  All rights reserved.
@@ -81,9 +81,10 @@ struct blacklist {
 u_int32_t	  imask(u_int8_t);
 u_int8_t	  maxblock(u_int32_t, u_int8_t);
 u_int8_t	  maxdiff(u_int32_t, u_int32_t);
-struct cidr	 *range2cidrlist(u_int32_t, u_int32_t);
+struct cidr	 *range2cidrlist(struct cidr *, int *, int *, u_int32_t,
+		     u_int32_t);
 void		  cidr2range(struct cidr, u_int32_t *, u_int32_t *);
-char		 *atop(u_int32_t);
+char		 *addr2pchar(u_int32_t);
 int		  parse_netblock(char *, struct bl *, struct bl *, int);
 int		  open_child(char *, char **);
 int		  fileget(char *);
@@ -92,11 +93,11 @@ char		 *fix_quoted_colons(char *);
 void		  do_message(FILE *, char *);
 struct bl	 *add_blacklist(struct bl *, size_t *, size_t *, gzFile, int);
 int		  cmpbl(const void *, const void *);
-struct cidr	**collapse_blacklist(struct bl *, size_t);
-int		  configure_spamd(u_short, char *, char *, struct cidr **);
-int		  configure_pf(struct cidr **);
+struct cidr	 *collapse_blacklist(struct bl *, size_t);
+int		  configure_spamd(u_short, char *, char *, struct cidr *);
+int		  configure_pf(struct cidr *);
 #ifdef __FreeBSD__
-int		  configure_ipfw(struct cidr **);
+int		  configure_ipfw(struct cidr *);
 #endif
 int		  getlist(char **, char *, struct blacklist *, struct blacklist *);
 __dead void	  usage(void);
@@ -110,12 +111,9 @@ extern char 	 *__progname;
 u_int32_t
 imask(u_int8_t b)
 {
-	u_int32_t j = 0;
-	int i;
-
-	for (i = 31; i > 31 - b; --i)
-		j |= (1 << i);
-	return (j);
+	if (b == 0)
+		return (0);
+	return (0xffffffff << (32 - b));
 }
 
 u_int8_t
@@ -151,10 +149,9 @@ maxdiff(u_int32_t a, u_int32_t b)
 }
 
 struct cidr *
-range2cidrlist(u_int32_t start, u_int32_t end)
+range2cidrlist(struct cidr *list, int *cli, int *cls, u_int32_t start,
+    u_int32_t end)
 {
-	struct cidr *list = NULL;
-	size_t cs = 0, cu = 0;
 	u_int8_t maxsize, diff;
 	struct cidr *tmp;
 
@@ -163,18 +160,16 @@ range2cidrlist(u_int32_t start, u_int32_t end)
 		diff = maxdiff(start, end);
 
 		maxsize = MAX(maxsize, diff);
-		if (cs <= cu + 1) {		/* one extra for terminator */
-			tmp = realloc(list, (cs + 32) * sizeof(struct cidr));
+		if (*cls <= *cli + 1) {		/* one extra for terminator */
+			tmp = realloc(list, (*cls + 32) * sizeof(struct cidr));
 			if (tmp == NULL)
 				errx(1, "malloc failed");
 			list = tmp;
-			cs += 32;
+			*cls += 32;
 		}
-		list[cu].addr = start;
-		list[cu].bits = maxsize;
-		cu++;
-		list[cu].addr = 0;
-		list[cu].bits = 0;
+		list[*cli].addr = start;
+		list[*cli].bits = maxsize;
+		(*cli)++;
 		start = start + (1 << (32 - maxsize));
 	}
 	return (list);
@@ -187,8 +182,13 @@ cidr2range(struct cidr cidr, u_int32_t *start, u_int32_t *end)
 	*end = cidr.addr + (1 << (32 - cidr.bits)) - 1;
 }
 
+/*
+ * rename function atop to addr2pchar
+ * It collides on FreeBSD9 with atop from machine/param.h, since
+ * _NO_NAMESPACE_POLLUTION was removed from header files.
+ */
 char *
-atop(u_int32_t addr)
+addr2pchar(u_int32_t addr)
 {
 	struct in_addr in;
 
@@ -399,7 +399,7 @@ void
 do_message(FILE *sdc, char *msg)
 {
 	size_t i, bs = 0, bu = 0, len;
-	ssize_t n;	
+	ssize_t n;
 	char *buf = NULL, last, *tmp;
 	int fd;
 
@@ -501,8 +501,19 @@ add_blacklist(struct bl *bl, size_t *blc, size_t *bls, gzFile gzf, int white)
 	}
  parse:
 	start = 0;
+	/* we assume that there is an IP for every 16 bytes */
+	if (*blc + bu / 8 >= *bls) {
+		*bls += bu / 8;
+		blt = realloc(bl, *bls * sizeof(struct bl));
+		if (blt == NULL) {
+			*bls -= bu / 8;
+			serrno = errno;
+			goto bldone;
+		}
+		bl = blt;
+	}
 	for (i = 0; i <= bu; i++) {
-		if (*blc == *bls) {
+		if (*blc + 1 >= *bls) {
 			*bls += 1024;
 			blt = realloc(bl, *bls * sizeof(struct bl));
 			if (blt == NULL) {
@@ -546,24 +557,24 @@ cmpbl(const void *a, const void *b)
  * as lists of nonoverlapping cidr blocks suitable for feeding in
  * printable form to pfctl or spamd.
  */
-struct cidr **
+struct cidr *
 collapse_blacklist(struct bl *bl, size_t blc)
 {
-	int bs = 0, ws = 0, state=0, cli, i;
+	int bs = 0, ws = 0, state=0, cli, cls, i;
 	u_int32_t bstart = 0;
-	struct cidr **cl;
+	struct cidr *cl;
 	int laststate;
 	u_int32_t addr;
 
 	if (blc == 0)
 		return (NULL);
-	cl = calloc(((blc / 2) + 1), sizeof(struct cidr));
+	cli = 0;
+	cls = (blc / 2) + 1;
+	cl = calloc(cls, sizeof(struct cidr));
 	if (cl == NULL) {
 		return (NULL);
 	}
 	qsort(bl, blc, sizeof(struct bl), cmpbl);
-	cli = 0;
-	cl[cli] = NULL;
 	for (i = 0; i < blc;) {
 		laststate = state;
 		addr = bl[i].addr;
@@ -585,17 +596,17 @@ collapse_blacklist(struct bl *bl, size_t blc)
 		}
 		if (laststate == 1 && state == 0) {
 			/* end blacklist */
-			cl[cli++] = range2cidrlist(bstart, addr - 1);
-			cl[cli] = NULL;
+			cl = range2cidrlist(cl, &cli, &cls, bstart, addr - 1);
 		}
 		laststate = state;
 	}
+	cl[cli].addr = 0;
 	return (cl);
 }
 
 int
 configure_spamd(u_short dport, char *name, char *message,
-    struct cidr **blacklists)
+    struct cidr *blacklists)
 {
 	int lport = IPPORT_RESERVED - 1, s;
 	struct sockaddr_in sin;
@@ -618,12 +629,9 @@ configure_spamd(u_short dport, char *name, char *message,
 	}
 	fprintf(sdc, "%s", name);
 	do_message(sdc, message);
-	while (*blacklists != NULL) {
-		struct cidr *b = *blacklists;
-		while (b->addr != 0) {
-			fprintf(sdc, ";%s/%u", atop(b->addr), (b->bits));
-			b++;
-		}
+	while (blacklists->addr != 0) {
+		fprintf(sdc, ";%s/%u", addr2pchar(blacklists->addr),
+		    blacklists->bits);
 		blacklists++;
 	}
 	fputc('\n', sdc);
@@ -634,7 +642,7 @@ configure_spamd(u_short dport, char *name, char *message,
 
 
 int
-configure_pf(struct cidr **blacklists)
+configure_pf(struct cidr *blacklists)
 {
 	char *argv[9]= {"pfctl", "-q", "-t", "spamd", "-T", "replace",
 	    "-f" "-", NULL};
@@ -668,13 +676,9 @@ configure_pf(struct cidr **blacklists)
 			return (-1);
 		}
 	}
-	while (*blacklists != NULL) {
-		struct cidr *b = *blacklists;
-
-		while (b->addr != 0) {
-			fprintf(pf, "%s/%u\n", atop(b->addr), (b->bits));
-			b++;
-		}
+	while (blacklists->addr != 0) {
+		fprintf(pf, "%s/%u\n", addr2pchar(blacklists->addr),
+		    blacklists->bits);
 		blacklists++;
 	}
 	return (0);
@@ -682,7 +686,7 @@ configure_pf(struct cidr **blacklists)
 
 #ifdef __FreeBSD__
 int
-configure_ipfw(struct cidr **blacklists)
+configure_ipfw(struct cidr *blacklists)
 {
 	static int s = -1;
 	ipfw_table_entry ent;
@@ -703,21 +707,15 @@ configure_ipfw(struct cidr **blacklists)
 		return (-1);
 	}
 
-	while (*blacklists != NULL) {
-		struct cidr *b = *blacklists;
-
-		while (b->addr != 0) {
-			/* add b to ipfw_tabno */
-			ent.tbl = ipfw_tabno;
-			ent.masklen = b->bits;
-			ent.value = 0;
-			inet_aton(atop(b->addr), (struct in_addr *)&ent.addr);
-			if (setsockopt(s, IPPROTO_IP, IP_FW_TABLE_ADD,  &ent, sizeof(ent)) < 0)
-			{
-				err(1, "IPFW setsockopt(IP_FW_TABLE_ADD)");
-				return (-1);
-			}
-			b++;
+	while (blacklists != 0) {
+		ent.tbl = ipfw_tabno;
+		ent.masklen = blacklists->bits;
+		ent.value = 0;
+		inet_aton(addr2pchar(blacklists->addr), (struct in_addr *)&ent.addr);
+		if (setsockopt(s, IPPROTO_IP, IP_FW_TABLE_ADD,  &ent, sizeof(ent)) < 0)
+		{
+			err(1, "IPFW setsockopt(IP_FW_TABLE_ADD)");
+			return (-1);
 		}
 		blacklists++;
 	}
@@ -793,7 +791,7 @@ getlist(char ** db_array, char *name, struct blacklist *blist,
 	serror = errno;
 	gzclose(gzf);
 	if (bl == NULL) {
-		serror = errno;
+		errno = serror;
 		warn("Could not add %slist %s", black ? "black" : "white",
 		    name);
 		return (0);
@@ -820,7 +818,7 @@ getlist(char ** db_array, char *name, struct blacklist *blist,
 void
 send_blacklist(struct blacklist *blist, in_port_t port)
 {
-	struct cidr **cidrs, **tmp;
+	struct cidr *cidrs;
 
 	if (blist->blc > 0) {
 		cidrs = collapse_blacklist(blist->bl, blist->blc);
@@ -831,13 +829,12 @@ send_blacklist(struct blacklist *blist, in_port_t port)
 			    blist->message, cidrs) == -1)
 				err(1, "Can't connect to spamd on port %d",
 				    port);
-#ifndef __FreeBSD__					
-			if (!greyonly && configure_pf(cidrs) == -1)
-				err(1, "pfctl failed");
-#else
+#ifdef __FreeBSD__
 		if(use_pf){
+#endif
 			if (!greyonly && configure_pf(cidrs) == -1)
 				err(1, "pfctl failed");
+#ifdef __FreeBSD__
 		}
 		else{
 			if (!greyonly && configure_ipfw(cidrs) == -1)
@@ -845,8 +842,6 @@ send_blacklist(struct blacklist *blist, in_port_t port)
 		}
 #endif
 		}
-		for (tmp = cidrs; *tmp != NULL; tmp++)
-			free(*tmp);
 		free(cidrs);
 		free(blist->bl);
 	}
@@ -858,7 +853,7 @@ usage(void)
 
 #ifndef __FreeBSD__
 	fprintf(stderr, "usage: %s [-bDdn]\n", __progname);
-#else	
+#else
 	fprintf(stderr, "usage: %s [-bDdnmt]\n", __progname);
 #endif
 	exit(1);
@@ -867,11 +862,11 @@ usage(void)
 int
 main(int argc, char *argv[])
 {
-	size_t dbs, dbc, blc, bls, black, white;
-	char **db_array, *buf, *name;
+	size_t blc, bls, black, white;
+	char *db_array[2], *buf, *name;
 	struct blacklist *blists;
 	struct servent *ent;
-	int daemonize = 0, i, ch;
+	int daemonize = 0, ch;
 
 #ifndef __FreeBSD__
 	while ((ch = getopt(argc, argv, "bdDn")) != -1) {
@@ -917,23 +912,14 @@ main(int argc, char *argv[])
 		errx(1, "cannot find service \"spamd-cfg\" in /etc/services");
 	ent->s_port = ntohs(ent->s_port);
 
-	dbs = argc + 2;
-	dbc = 0;
-	db_array = calloc(dbs, sizeof(char *));
-	if (db_array == NULL)
-		errx(1, "malloc failed");
+	db_array[0] = PATH_SPAMD_CONF;
+	db_array[1] = NULL;
 
-	db_array[dbc]= PATH_SPAMD_CONF;
-	dbc++;
-	for (i = 1; i < argc; i++)
-		db_array[dbc++] = argv[i];
-
-	blists = NULL;
-	blc = bls = 0;
 	if (cgetent(&buf, db_array, "all") != 0)
 		err(1, "Can't find \"all\" in spamd config");
 	name = strsep(&buf, ": \t"); /* skip "all" at start */
-	blc = 0;
+	blists = NULL;
+	blc = bls = 0;
 	while ((name = strsep(&buf, ": \t")) != NULL) {
 		if (*name) {
 			/* extract config in order specified in "all" tag */

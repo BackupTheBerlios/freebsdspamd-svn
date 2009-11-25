@@ -20,13 +20,13 @@ firewalls. This howto is related to the IPFW spamd mode.
        obspamd_flags="-m ipfw"
 
 see spamd(8) manual for additional keys. Also you need to use "-m ipfw" with
-spamd-setup and spamlogd utility. If you want to change default IPFW table 
+spamd-setup and spamlogd utility. If you want to change default IPFW table
 number - use '-t' option.
 
 5) If you are using greylisting and want to use spamd whitelist update daemon
    - 'spamlogd',  you will need to setup netgraph interface for this.
    Here is  an example:
-   
+
 5.1) Load netgraph modules:
      # kldload netgraph.ko
      # kldload ng_iface.ko
@@ -34,7 +34,7 @@ number - use '-t' option.
 5.2) add IPFW rules to deny all traffic on pseudo interface.
      # ipfw add 1 deny ip from any to any via ng0
 5.3) add IPFW rules to tee traffic to the netgraph system, using ng_ipfw. You
-     need to add this line before 'allow tcp from table\(1\) to me 25 in' in 
+     need to add this line before 'allow tcp from table\(1\) to me 25 in' in
      your firewall configuration
      ${fwcmd}  add ngtee 555 tcp from table\(1\) to me 25 in
 5.4) Create ng0 interface and connect it to the ipfw hook:
@@ -43,7 +43,7 @@ number - use '-t' option.
 5.5) Add to rc.conf line like:
      obspamlogd_enable="YES"
      obspamlogd_flags="-m ipfw -l ng0"
-5.6) Make startup script for the step 5.1-5.4 and add it to your startup 
+5.6) Make startup script for the step 5.1-5.4 and add it to your startup
      commands.
 
 KNOWN BUGS AND LIMITATIONS

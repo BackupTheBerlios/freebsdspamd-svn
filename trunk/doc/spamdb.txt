@@ -14,7 +14,7 @@ Use cases:
     in real time.
 
   - offload greyscanner from the gateway/MTA's to separate machine
-  
+
   - Many more ideas...
 
 

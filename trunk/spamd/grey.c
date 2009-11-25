@@ -1,4 +1,4 @@
-/*	$OpenBSD: grey.c,v 1.47 2009/04/20 17:42:21 beck Exp $	*/
+/*	$OpenBSD: grey.c,v 1.48 2009/11/12 04:08:46 deraadt Exp $	*/
 
 /*
  * Copyright (c) 2004-2006 Bob Beck.  All rights reserved.
@@ -329,9 +329,10 @@ configure_ipfw(char **addrs, int count)
 {
 	ipfw_table_entry ent;
 	int i;
-	static int ipfw_socket;
+	static int ipfw_socket = 0;
 	
-	ipfw_socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+	if (ipfw_socket == 0)
+		ipfw_socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
 
 	if (debug)
 		fprintf(stderr, "configure ipfw tabno: %d\n", ipfw_tabno);
@@ -363,8 +364,11 @@ configure_ipfw(char **addrs, int count)
 		inet_aton(addrs[i], (struct in_addr *)&ent.addr);
 		if (setsockopt(ipfw_socket, IPPROTO_IP, IP_FW_TABLE_ADD,  &ent, sizeof(ent)) < 0)
 		{
-			syslog_r(LOG_INFO, &sdata, "IPFW setsockopt(IP_FW_TABLE_ADD) (%m)");
-			return(-1);
+			/* work around dups */
+			if (errno != EEXIST) {
+				syslog_r(LOG_INFO, &sdata, "IPFW setsockopt(IP_FW_TABLE_ADD) (%m)");
+				return(-1);
+			}
 		}
 	}
 
@@ -421,14 +425,14 @@ readsuffixlists(void)
 				continue;
 			if (buf[len-1] == '\n')
 				len--;
-			if ((m = malloc(sizeof(struct mail_addr))) == NULL)
-				goto bad;
 			if ((len + 1) > sizeof(m->addr)) {
 				syslog_r(LOG_ERR, &sdata,
 				    "line too long in %s - file ignored",
 				    alloweddomains_file);
 				goto bad;
 			}
+			if ((m = malloc(sizeof(struct mail_addr))) == NULL)
+				goto bad;
 			memcpy(m->addr, buf, len);
 			m->addr[len]='\0';
 			syslog_r(LOG_ERR, &sdata, "got suffix %s", m->addr);
@@ -1248,6 +1252,7 @@ check_spamd_db(void)
 				    "create %s failed (%m)", PATH_SPAMD_DB);
 				exit(1);
 			}
+			/* if we are dropping privs, chown to that user */
 			if (pw && (chown(PATH_SPAMD_DB, pw->pw_uid, pw->pw_gid) == -1)) {
 				syslog_r(LOG_ERR, &sdata,
 				    "chown %s failed (%m)", PATH_SPAMD_DB);
