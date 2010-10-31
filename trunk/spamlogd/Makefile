@@ -4,8 +4,6 @@ PROG=	spamlogd
 SRCS=	spamlogd.c sync.c
 MAN=	spamlogd.8
 
-.include "../osver.mk"
-
 CFLAGS+= -Wall -Wstrict-prototypes -I${.CURDIR}/../spamd
 LDADD+= -lpcap -lcrypto -lmd
 DPADD+= ${LIBPCAP} ${LIBMD}

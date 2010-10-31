@@ -1,4 +1,4 @@
-/*	$OpenBSD: spamd.c,v 1.106 2009/05/20 20:37:43 thib Exp $	*/
+/*	$OpenBSD: spamd.c,v 1.108 2010/01/14 00:44:12 beck Exp $	*/
 
 /*
  * Copyright (c) 2002-2007 Bob Beck.  All rights reserved.
@@ -93,6 +93,7 @@ struct con {
 	int data_lines;
 	int data_body;
 	int stutter;
+	int badcmd;
 	int sr;
 } *con;
 
@@ -883,9 +884,16 @@ nextstate(struct con *cp)
 			if (match(cp->ibuf, "NOOP"))
 				snprintf(cp->obuf, cp->osize,
 				    "250 2.0.0 OK I did nothing\r\n");
-			else
+			else {
                         	snprintf(cp->obuf, cp->osize,
 				    "500 5.5.1 Command unrecognized\r\n");
+				cp->badcmd++;
+				if (cp->badcmd > 20) {
+					cp->laststate = cp->state;
+					cp->state = 98;
+					goto done;
+				}
+			}
 			cp->state = cp->laststate;
 			cp->ip = cp->ibuf;
 			cp->il = sizeof(cp->ibuf) - 1;
@@ -1056,8 +1064,8 @@ main(int argc, char *argv[])
 	extern char *__progname;
 	FILE *fpid = NULL;
 	struct stat dbstat;
-	int pt, ge, we;
-#endif	
+	int pt, ge, we;  /* make build on amd64/sparc happy */
+#endif
 	fd_set *fdsr = NULL, *fdsw = NULL;
 	struct sockaddr_in sin;
 	struct sockaddr_in lin;
@@ -1287,7 +1295,7 @@ main(int argc, char *argv[])
 		syslog(LOG_ERR, "error can't create pid file %s (%m)", pid_file);
 		err(1, "can't create pid file \"%s\"", pid_file);
 	}
-#endif	
+#endif
 
 	if (debug == 0) {
 		if (daemon(1, 1) == -1)
@@ -1297,14 +1305,14 @@ main(int argc, char *argv[])
 	if (greylist) {
 #ifdef __FreeBSD__
 		if(use_pf){
-#endif			
+#endif
 			pfdev = open("/dev/pf", O_RDWR);
 			if (pfdev == -1) {
 				syslog_r(LOG_ERR, &sdata, "open /dev/pf: %m");
 				exit(1);
 			}
 #ifdef __FreeBSD__
-		} 	
+		}
 #endif
 
 		maxblack = (maxblack >= maxcon) ? maxcon - 100 : maxblack;
@@ -1371,7 +1379,7 @@ jail:
 			exit(1);
 		}
 	}
-#endif	
+#endif
 
 	if (chroot("/var/empty") == -1 || chdir("/") == -1) {
 		syslog(LOG_ERR, "cannot chdir to /var/empty.");

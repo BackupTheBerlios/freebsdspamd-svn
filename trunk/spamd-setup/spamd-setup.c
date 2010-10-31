@@ -78,29 +78,29 @@ struct blacklist {
 	int count;
 };
 
-u_int32_t	  imask(u_int8_t);
-u_int8_t	  maxblock(u_int32_t, u_int8_t);
-u_int8_t	  maxdiff(u_int32_t, u_int32_t);
-struct cidr	 *range2cidrlist(struct cidr *, int *, int *, u_int32_t,
+u_int32_t	 imask(u_int8_t);
+u_int8_t	 maxblock(u_int32_t, u_int8_t);
+u_int8_t	 maxdiff(u_int32_t, u_int32_t);
+struct cidr	*range2cidrlist(struct cidr *, int *, int *, u_int32_t,
 		     u_int32_t);
-void		  cidr2range(struct cidr, u_int32_t *, u_int32_t *);
-char		 *addr2pchar(u_int32_t);
-int		  parse_netblock(char *, struct bl *, struct bl *, int);
-int		  open_child(char *, char **);
-int		  fileget(char *);
-int		  open_file(char *, char *);
-char		 *fix_quoted_colons(char *);
-void		  do_message(FILE *, char *);
-struct bl	 *add_blacklist(struct bl *, size_t *, size_t *, gzFile, int);
-int		  cmpbl(const void *, const void *);
-struct cidr	 *collapse_blacklist(struct bl *, size_t);
-int		  configure_spamd(u_short, char *, char *, struct cidr *);
-int		  configure_pf(struct cidr *);
+void		 cidr2range(struct cidr, u_int32_t *, u_int32_t *);
+char		*a_to_p(u_int32_t);
+int		 parse_netblock(char *, struct bl *, struct bl *, int);
+int		 open_child(char *, char **);
+int		 fileget(char *);
+int		 open_file(char *, char *);
+char		*fix_quoted_colons(char *);
+void		 do_message(FILE *, char *);
+struct bl	*add_blacklist(struct bl *, size_t *, size_t *, gzFile, int);
+int		 cmpbl(const void *, const void *);
+struct cidr	*collapse_blacklist(struct bl *, size_t);
+int		 configure_spamd(u_short, char *, char *, struct cidr *);
+int		 configure_pf(struct cidr *);
+int		 getlist(char **, char *, struct blacklist *, struct blacklist *);
+__dead void	 usage(void);
 #ifdef __FreeBSD__
 int		  configure_ipfw(struct cidr *);
 #endif
-int		  getlist(char **, char *, struct blacklist *, struct blacklist *);
-__dead void	  usage(void);
 
 int		  debug;
 int		  dryrun;
@@ -183,12 +183,12 @@ cidr2range(struct cidr cidr, u_int32_t *start, u_int32_t *end)
 }
 
 /*
- * rename function atop to addr2pchar
+ * rename function atop to a_to_p
  * It collides on FreeBSD9 with atop from machine/param.h, since
  * _NO_NAMESPACE_POLLUTION was removed from header files.
  */
 char *
-addr2pchar(u_int32_t addr)
+a_to_p(u_int32_t addr)
 {
 	struct in_addr in;
 
@@ -630,7 +630,7 @@ configure_spamd(u_short dport, char *name, char *message,
 	fprintf(sdc, "%s", name);
 	do_message(sdc, message);
 	while (blacklists->addr != 0) {
-		fprintf(sdc, ";%s/%u", addr2pchar(blacklists->addr),
+		fprintf(sdc, ";%s/%u", a_to_p(blacklists->addr),
 		    blacklists->bits);
 		blacklists++;
 	}
@@ -677,7 +677,7 @@ configure_pf(struct cidr *blacklists)
 		}
 	}
 	while (blacklists->addr != 0) {
-		fprintf(pf, "%s/%u\n", addr2pchar(blacklists->addr),
+		fprintf(pf, "%s/%u\n", a_to_p(blacklists->addr),
 		    blacklists->bits);
 		blacklists++;
 	}
@@ -711,7 +711,7 @@ configure_ipfw(struct cidr *blacklists)
 		ent.tbl = ipfw_tabno;
 		ent.masklen = blacklists->bits;
 		ent.value = 0;
-		inet_aton(addr2pchar(blacklists->addr), (struct in_addr *)&ent.addr);
+		inet_aton(a_to_p(blacklists->addr), (struct in_addr *)&ent.addr);
 		if (setsockopt(s, IPPROTO_IP, IP_FW_TABLE_ADD,  &ent, sizeof(ent)) < 0)
 		{
 			err(1, "IPFW setsockopt(IP_FW_TABLE_ADD)");
@@ -720,7 +720,7 @@ configure_ipfw(struct cidr *blacklists)
 		blacklists++;
 	}
 
-	return(0);
+	return (0);
 }
 #endif
 
@@ -889,7 +889,7 @@ main(int argc, char *argv[])
 			break;
 		case 'm':
 			if (strcmp(optarg, "ipfw") == 0)
-				use_pf=0;
+				use_pf = 0;
 			break;
 #endif
 		case 'D':

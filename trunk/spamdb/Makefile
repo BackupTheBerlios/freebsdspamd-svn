@@ -4,8 +4,6 @@ PROG=	spamdb
 SRCS=	spamdb.c sync.c
 MAN=	spamdb.8
 
-.include "${.CURDIR}/../osver.mk"
-
 CFLAGS+= -Wall -Wstrict-prototypes -I${.CURDIR}/../spamd
 
 LDADD+= -lcrypto -lmd

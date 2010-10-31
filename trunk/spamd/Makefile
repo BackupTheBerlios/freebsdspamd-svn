@@ -4,8 +4,6 @@ PROG=	spamd
 SRCS=	spamd.c sdl.c grey.c sync.c
 MAN=	spamd.8
 
-.include "${.CURDIR}/../osver.mk"
-
 CFLAGS+= -Wall -Wstrict-prototypes
 
 LDADD+=	-lcrypto -lmd

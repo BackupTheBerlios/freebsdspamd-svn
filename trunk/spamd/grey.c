@@ -1,4 +1,4 @@
-/*	$OpenBSD: grey.c,v 1.48 2009/11/12 04:08:46 deraadt Exp $	*/
+/*	$OpenBSD: grey.c,v 1.50 2010/10/06 09:38:02 stephan Exp $	*/
 
 /*
  * Copyright (c) 2004-2006 Bob Beck.  All rights reserved.
@@ -161,7 +161,7 @@ server_lookup(struct sockaddr *client, struct sockaddr *proxy,
 	if (client->sa_family == AF_INET)
 		return (server_lookup4(satosin(client), satosin(proxy),
 		    satosin(server)));
-	
+
 	if (client->sa_family == AF_INET6)
 		return (server_lookup6(satosin6(client), satosin6(proxy),
 		    satosin6(server)));
@@ -175,7 +175,7 @@ server_lookup4(struct sockaddr_in *client, struct sockaddr_in *proxy,
     struct sockaddr_in *server)
 {
 	struct pfioc_natlook pnl;
-	
+
 #ifdef __FreeBSD__
 	if(!use_pf){
 		memset(server, 0, sizeof(struct sockaddr_in));
@@ -195,7 +195,7 @@ server_lookup4(struct sockaddr_in *client, struct sockaddr_in *proxy,
 	memcpy(&pnl.daddr.v4, &proxy->sin_addr.s_addr, sizeof pnl.daddr.v4);
 	pnl.sport = client->sin_port;
 	pnl.dport = proxy->sin_port;
-	
+
 	if (ioctl(pfdev, DIOCNATLOOK, &pnl) == -1)
 		return (-1);
 
@@ -205,7 +205,7 @@ server_lookup4(struct sockaddr_in *client, struct sockaddr_in *proxy,
 	memcpy(&server->sin_addr.s_addr, &pnl.rdaddr.v4,
 	    sizeof server->sin_addr.s_addr);
 	server->sin_port = pnl.rdport;
-		
+
 	return (0);
 }
 
@@ -234,7 +234,7 @@ server_lookup6(struct sockaddr_in6 *client, struct sockaddr_in6 *proxy,
 	memcpy(&pnl.daddr.v6, &proxy->sin6_addr.s6_addr, sizeof pnl.daddr.v6);
 	pnl.sport = client->sin6_port;
 	pnl.dport = proxy->sin6_port;
-	
+
 	if (ioctl(pfdev, DIOCNATLOOK, &pnl) == -1)
 		return (-1);
 
@@ -330,7 +330,7 @@ configure_ipfw(char **addrs, int count)
 	ipfw_table_entry ent;
 	int i;
 	static int ipfw_socket = 0;
-	
+
 	if (ipfw_socket == 0)
 		ipfw_socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
 
@@ -344,7 +344,7 @@ configure_ipfw(char **addrs, int count)
 		return(-1);
 	}
 
-	/* flush the table */	
+	/* flush the table */
 	ent.tbl = ipfw_tabno;
 	if (setsockopt(ipfw_socket, IPPROTO_IP, IP_FW_TABLE_FLUSH,  &ent.tbl, sizeof(ent.tbl)) < 0)
 	{
@@ -625,11 +625,13 @@ do_changes(DB *db)
 	return(ret);
 }
 
+/* -1=error, 0=notfound, 1=TRAPPED, 2=WHITE */
 int
-db_notin(DB *db, char *key)
+db_addrstate(DB *db, char *key)
 {
 	int			i;
 	DBT			dbk, dbd;
+	struct gdata		gd;
 
 	memset(&dbk, 0, sizeof(dbk));
 	dbk.size = strlen(key);
@@ -640,10 +642,9 @@ db_notin(DB *db, char *key)
 		return (-1);
 	if (i)
 		/* not in the database */
-		return (1);
-	else
-		/* it is in the database */
 		return (0);
+	memcpy(&gd, dbd.data, sizeof(gd));
+	return gd.pcount == -1 ? 1 : 2;
 }
 
 
@@ -698,8 +699,10 @@ greyscan(char *dbname)
 		} else if (gd.pcount >= 0 && gd.pass <= now) {
 			int tuple = 0;
 			char *cp;
+			int state;
 
 			/*
+			 * if not already TRAPPED,
 			 * add address to whitelist
 			 * add an address-keyed entry to db
 			 */
@@ -709,14 +712,15 @@ greyscan(char *dbname)
 				*cp = '\0';
 			}
 
-			if (addwhiteaddr(a) == -1) {
+			state = db_addrstate(db, a);
+			if (state != 1 && addwhiteaddr(a) == -1) {
 				if (cp != NULL)
 					*cp = '\n';
 				if (queue_change(a, NULL, 0, DBC_DEL) == -1)
 					goto bad;
 			}
 
-			if (tuple && db_notin(db, a)) {
+			if (tuple && state <= 0) {
 				if (cp != NULL)
 					*cp = '\0';
 				/* re-add entry, keyed only by ip */
@@ -1260,10 +1264,10 @@ check_spamd_db(void)
 			}
 			db->sync(db, 0);
 			db->close(db);
-			
+
 			if(use_pf)
 				drop_privs();
-			
+
 			return;
 			break;
 		case EFTYPE:

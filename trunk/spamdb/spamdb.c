@@ -281,7 +281,7 @@ dblist(DB *db)
 				printf("GREY|%s|%s|%s|%s|%d|%d|%d|%d|%d\n",
 				    a, "", helo, from, (int)gd.first, (int)gd.pass,
 				    (int)gd.expire, gd.bcount, gd.pcount);
-			
+
 			} else {
 				*to = '\0';
 				to++;
@@ -312,9 +312,9 @@ usage(void)
 	fprintf(stderr,
 		"usage: %s [-D] [-Y synctarget] [-W whiteexp] [[-Tt] -a keys] [[-Tt] -d keys]\n",
 		__progname);
-#else		
+#else
 	fprintf(stderr, "usage: %s [[-Tt] -a keys] [[-Tt] -d keys]\n", __progname);
-#endif	
+#endif
 	exit(1);
 	/* NOTREACHED */
 }
@@ -373,10 +373,10 @@ main(int argc, char **argv)
 				usage();
 			whiteexp = (i * 60 * 60);
 			break;
-#else			
+#else
 	while ((ch = getopt(argc, argv, "adtT")) != -1) {
 		switch (ch) {
-#endif	
+#endif
 		case 'a':
 			action = 1;
 			break;
@@ -405,12 +405,12 @@ main(int argc, char **argv)
 		errx(1, "exit \"%s\" : Not a regular file", PATH_SPAMD_DB);
 	}
 #endif
-	
+
 	memset(&hashinfo, 0, sizeof(hashinfo));
 	db = dbopen(PATH_SPAMD_DB, O_EXLOCK | (action ? O_RDWR : O_RDONLY),
 	    0600, DB_HASH, &hashinfo);
 	if (db == NULL) {
-		if (errno == EFTYPE)	
+		if (errno == EFTYPE)
 			err(1, "%s is old, run current spamd to convert it",
 			    PATH_SPAMD_DB);
 		else
@@ -428,7 +428,7 @@ main(int argc, char **argv)
 		if (syncfd == -1)
 			err(1, "sync init");
 	}
-#endif	
+#endif
 
 	switch (action) {
 	case 0:
@@ -436,7 +436,7 @@ main(int argc, char **argv)
 	case 1:
 #ifdef __FreeBSD__
 		check_opt_sequence(argv, argc);
-#endif		
+#endif
 		for (i=0; i<argc; i++)
 			if (argv[i][0] != '\0') {
 				c++;
@@ -448,7 +448,7 @@ main(int argc, char **argv)
 	case 2:
 #ifdef __FreeBSD__
 		check_opt_sequence(argv, argc);
-#endif		
+#endif
 		for (i=0; i<argc; i++)
 			if (argv[i][0] != '\0') {
 				c++;
@@ -463,7 +463,7 @@ main(int argc, char **argv)
 #ifdef __FreeBSD__
 	if (syncsend)
 		closelog_r(&sdata);
-#endif	
+#endif
 	db->close(db);
 	return (r);
 }

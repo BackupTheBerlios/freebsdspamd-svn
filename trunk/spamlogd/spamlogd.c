@@ -129,7 +129,7 @@ init_pcap(void)
 	struct bpf_program	bpfp;
 	char	filter[PCAPFSIZ] = "ip and port 25 and action pass "
 		    "and tcp[13]&0x12=0x2";
-			
+
 #ifdef __FreeBSD__
 	if(!use_pf) {
 		strncpy(filter, "ip and port 25 and tcp[13]&0x12=0x2", sizeof(filter));
@@ -193,19 +193,19 @@ logpkt_handler(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 			"packet dropped.", hdr->length, MIN_PFLOG_HDRLEN);
 			return;
 		}
-		
+
 		hdrlen = BPF_WORDALIGN(hdr->length);
-		
+
 		if (caplen < hdrlen) {
 			logmsg(LOG_WARNING, "pflog header larger than caplen (%u/%u). "
 			"packet dropped.", hdrlen, caplen);
 			return;
 		}
-		
+
 		/* We're interested in passed packets */
 		if (hdr->action != PF_PASS)
 			return;
-		
+
 		af = hdr->af;
 		if (af == AF_INET) {
 			ip = (const struct ip *)(sp + hdrlen);
@@ -341,7 +341,7 @@ main(int argc, char **argv)
 	FILE		*fpid = NULL;
 	struct		stat dbstat;
 	int		rst;
-#endif	
+#endif
 	int		 ch, i;
 	const char 	*errstr;
 	struct passwd	*pw;
@@ -391,7 +391,7 @@ main(int argc, char **argv)
 				use_pf=0;
 			break;
 #endif
-			
+
 		default:
 			usage();
 			/* NOTREACHED */
@@ -409,7 +409,7 @@ main(int argc, char **argv)
 		syslog(LOG_ERR, "error %s (Not a regular file)", PATH_SPAMD_DB);
 		errx(1, "exit \"%s\" : Not a regular file", PATH_SPAMD_DB);
 	}
-#endif	
+#endif
 	signal(SIGINT , sighandler_close);
 	signal(SIGQUIT, sighandler_close);
 	signal(SIGTERM, sighandler_close);
@@ -426,7 +426,7 @@ main(int argc, char **argv)
 		if (syncfd == -1)
 			err(1, "sync init");
 	}
-	
+
 #ifdef __FreeBSD__
 	/* open the pid file just before switch the user */
 	fpid = fopen(pid_file, "w");
@@ -434,7 +434,7 @@ main(int argc, char **argv)
 		syslog(LOG_ERR, "error can't create pid file %s (%m)", pid_file);
 		err(1, "can't create pid file \"%s\"", pid_file);
 	}
-#endif	
+#endif
 
 	/* privdrop */
 	pw = getpwnam("_spamd");
@@ -462,7 +462,7 @@ main(int argc, char **argv)
 			exit (1);
 		}
 	}
-#endif	
+#endif
 
 	pcap_loop(hpcap, -1, phandler, NULL);
 
