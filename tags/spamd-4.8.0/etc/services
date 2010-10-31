@@ -1,0 +1,3 @@
+spamd		8025/tcp		# spamd(8)
+spamd-sync	8025/udp		# spamd(8) synchronisation
+spamd-cfg	8026/tcp		# spamd(8) configuration
