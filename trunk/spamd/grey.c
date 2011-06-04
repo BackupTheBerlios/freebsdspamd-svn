@@ -115,7 +115,7 @@ time_t startup;
 
 static char *pargv[11]= {
 	"pfctl", "-p", "/dev/pf", "-q", "-t",
-	"spamd-white", "-T", "replace", "-f" "-", NULL
+	"spamd-white", "-T", "replace", "-f", "-", NULL
 };
 
 /* If the parent gets a signal, kill off the children and exit */
@@ -261,8 +261,10 @@ configure_pf(char **addrs, int count)
 	sa.sa_flags = SA_RESTART;
 	sa.sa_handler = sig_term_chld;
 
-	if (debug)
-		fprintf(stderr, "configure_pf - device on fd %d\n", pfdev);
+	if (debug) {
+		time_t now = time(NULL);
+		fprintf(stderr, "configure_pf - device on fd %d ; %s", pfdev, ctime(&now));
+	}
 	if (pfdev < 1 || pfdev > 63)
 		return(-1);
 	if (asprintf(&fdpath, "/dev/fd/%d", pfdev) == -1)
